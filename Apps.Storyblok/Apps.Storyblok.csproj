@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.2.0-alpha3" />
+      <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.12" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="DataSourceHandlers\EnumDataHandlers\" />
+    </ItemGroup>
+
+</Project>
