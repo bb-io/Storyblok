@@ -18,7 +18,7 @@ public class StoryEntity
 
     [Display("Updated at")] public DateTime UpdatedAt { get; set; }
 
-    [Display("Published at")] public DateTime PublishedAt { get; set; }
+    [Display("Published at")] public DateTime? PublishedAt { get; set; }
 
     [Display("Story ID")] public string Id { get; set; }
 
@@ -46,7 +46,7 @@ public class StoryEntity
 
     [Display("Expire at")] public DateTime? ExpireAt { get; set; }
 
-    [Display("First published at")] public DateTime FirstPublishedAt { get; set; }
+    [Display("First published at")] public DateTime? FirstPublishedAt { get; set; }
 
     [Display("Release IDs")] public IEnumerable<string> ReleaseIds { get; set; }
 

@@ -7,6 +7,7 @@ public static class JsonConfig
 {
     public static JsonSerializerSettings Settings => new()
     {
+        DefaultValueHandling = DefaultValueHandling.Ignore,
         ContractResolver = new DefaultContractResolver()
         {
             NamingStrategy = new SnakeCaseNamingStrategy()

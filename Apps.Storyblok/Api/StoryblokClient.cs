@@ -4,7 +4,6 @@ using Apps.Storyblok.Models.Response.Pagination.Base;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RestSharp;
 
 namespace Apps.Storyblok.Api;
@@ -24,8 +23,29 @@ public class StoryblokClient : BlackBirdRestClient
     {
         var responseContent = response.Content!;
 
-        var error = JsonConvert.DeserializeObject<ErrorResponse>(responseContent)!;
-        return new(error.Error ?? responseContent);
+        try
+        {
+            var errorStrings = JsonConvert.DeserializeObject<string[]>(responseContent);
+
+            if (errorStrings is not null && errorStrings.Any())
+                return new(string.Join("; ", errorStrings));
+        }
+        catch
+        {
+            // ignored
+        }
+
+        try
+        {
+            var error = JsonConvert.DeserializeObject<ErrorResponse>(responseContent)!;
+            return new(error.Error ?? responseContent);
+        }
+        catch
+        {
+            // ignored
+        }
+
+        return new(responseContent);
     }
 
     public async Task<List<TV>> Paginate<T, TV>(RestRequest request) where T : PaginationResponse<TV>

@@ -43,6 +43,7 @@ public class StoryActions : StoryblokInvocable
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
+        var ww = await Client.ExecuteWithErrorHandling(request);
         return response.Story;
     }
     
@@ -65,6 +66,28 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] StoryRequest story)
     {
         var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var request = new StoryblokRequest(endpoint, Method.Delete, Creds);
+
+        return Client.ExecuteWithErrorHandling(request);
+    }
+    
+    [Action("Publish story", Description = "Publish specific story")]
+    public Task PublishStory(
+        [ActionParameter] SpaceRequest space,
+        [ActionParameter] StoryRequest story)
+    {
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/publish";
+        var request = new StoryblokRequest(endpoint, Method.Get, Creds);
+
+        return Client.ExecuteWithErrorHandling(request);
+    }
+    
+    [Action("Unpublish story", Description = "Unpublish specific story")]
+    public Task UnpublishStory(
+        [ActionParameter] SpaceRequest space,
+        [ActionParameter] StoryRequest story)
+    {
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/unpublish";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
