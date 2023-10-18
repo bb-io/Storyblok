@@ -1,9 +1,12 @@
-﻿using Apps.Storyblok.Api;
+﻿using System.Net.Mime;
+using System.Text;
+using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
 using Apps.Storyblok.Invocable;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request.Space;
 using Apps.Storyblok.Models.Request.Story;
+using Apps.Storyblok.Models.Response;
 using Apps.Storyblok.Models.Response.Pagination;
 using Apps.Storyblok.Models.Response.Story;
 using Blackbird.Applications.Sdk.Common;
@@ -43,10 +46,30 @@ public class StoryActions : StoryblokInvocable
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
-        var ww = await Client.ExecuteWithErrorHandling(request);
         return response.Story;
     }
-    
+
+    [Action("Get story content", Description = "Get content of a specific story")]
+    public async Task<FileResponse> GetStoryContent(
+        [ActionParameter] SpaceRequest space,
+        [ActionParameter] StoryRequest story)
+    {
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var request = new StoryblokRequest(endpoint, Method.Get, Creds);
+
+        var response = await Client.ExecuteWithErrorHandling<StoryContentResponse>(request);
+        var contentJson = response.Story.Content.ToString();
+
+        return new()
+        {
+            File = new(Encoding.UTF8.GetBytes(contentJson))
+            {
+                Name = $"{story.StoryId}.json",
+                ContentType = MediaTypeNames.Application.Json
+            }
+        };
+    }
+
     [Action("Create story", Description = "Create a new story")]
     public async Task<StoryEntity> CreateStory(
         [ActionParameter] SpaceRequest space,
@@ -55,6 +78,20 @@ public class StoryActions : StoryblokInvocable
         var endpoint = $"/v1/spaces/{space.SpaceId}/stories/";
         var request = new StoryblokRequest(endpoint, Method.Post, Creds)
             .WithJsonBody(new CreateStoryRequest(input), JsonConfig.Settings);
+
+        var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
+        return response.Story;
+    }
+    
+    [Action("Update story", Description = "Update a specific story")]
+    public async Task<StoryEntity> UpdateStory(
+        [ActionParameter] SpaceRequest space,
+        [ActionParameter] StoryRequest story,
+        [ActionParameter] UpdateStoryInput input)
+    {
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var request = new StoryblokRequest(endpoint, Method.Put, Creds)
+            .WithJsonBody(new UpdateStoryRequest(input), JsonConfig.Settings);
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
@@ -70,7 +107,7 @@ public class StoryActions : StoryblokInvocable
 
         return Client.ExecuteWithErrorHandling(request);
     }
-    
+
     [Action("Publish story", Description = "Publish specific story")]
     public Task PublishStory(
         [ActionParameter] SpaceRequest space,
@@ -81,7 +118,7 @@ public class StoryActions : StoryblokInvocable
 
         return Client.ExecuteWithErrorHandling(request);
     }
-    
+
     [Action("Unpublish story", Description = "Unpublish specific story")]
     public Task UnpublishStory(
         [ActionParameter] SpaceRequest space,
