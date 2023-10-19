@@ -3,7 +3,7 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 
-namespace Apps.Storyblok.Invocable;
+namespace Apps.Storyblok.Invocables;
 
 public class StoryblokInvocable : BaseInvocable
 {

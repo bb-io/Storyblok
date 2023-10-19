@@ -2,7 +2,7 @@
 using System.Text;
 using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
-using Apps.Storyblok.Invocable;
+using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request.Space;
 using Apps.Storyblok.Models.Request.Story;

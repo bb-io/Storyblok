@@ -1,6 +1,6 @@
 ﻿using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
-using Apps.Storyblok.Invocable;
+using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request.Space;
 using Apps.Storyblok.Models.Response.Space;
@@ -22,9 +22,7 @@ public class SpaceActions : StoryblokInvocable
     [Action("List spaces", Description = "List all spaces in your space")]
     public Task<ListSpacesResponse> ListSpaces()
     {
-        var endpoint = $"/v1/spaces";
-        var request = new StoryblokRequest(endpoint, Method.Get, Creds);
-
+        var request = new StoryblokRequest("/v1/spaces", Method.Get, Creds);
         return Client.ExecuteWithErrorHandling<ListSpacesResponse>(request);
     }
 
@@ -41,7 +39,7 @@ public class SpaceActions : StoryblokInvocable
     [Action("Create space", Description = "Create a new space")]
     public async Task<SpaceEntity> CreateSpace([ActionParameter] CreateSpaceInput input)
     {
-        var endpoint = $"/v1/spaces";
+        var endpoint = "/v1/spaces";
         var request = new StoryblokRequest(endpoint, Method.Post, Creds)
             .WithJsonBody(new CreateSpaceRequest(input), JsonConfig.Settings);
 
