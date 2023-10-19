@@ -1,4 +1,4 @@
-using Apps.Storyblok.Models.Request.Story;
+using Apps.Storyblok.Constants;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Asset;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Other;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Story;
@@ -14,23 +14,23 @@ public class WebhookList
 {
     [Webhook("On story published", typeof(StoryPublishedWebhookHandler),
         Description = "On a specific story published")]
-    public Task<WebhookResponse<StoryPayload>> OnStoryPublished(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryPublished(WebhookRequest webhookRequest)
+        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
 
     [Webhook("On story unpublished", typeof(StoryUnpublishedWebhookHandler),
         Description = "On a specific story unpublished")]
-    public Task<WebhookResponse<StoryPayload>> OnStoryUnpublished(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryUnpublished(WebhookRequest webhookRequest)
+        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
 
     [Webhook("On story moved", typeof(StoryMovedWebhookHandler),
         Description = "On a specific story moved")]
-    public Task<WebhookResponse<StoryPayload>> OnStoryMoved(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryMoved(WebhookRequest webhookRequest)
+        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
 
     [Webhook("On story deleted", typeof(StoryDeletedWebhookHandler),
         Description = "On a specific story deleted")]
-    public Task<WebhookResponse<StoryPayload>> OnStoryDeleted(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryDeleted(WebhookRequest webhookRequest)
+        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
 
     [Webhook("On asset created", typeof(AssetCreatedWebhookHandler),
         Description = "On a new asset created")]
@@ -92,7 +92,7 @@ public class WebhookList
         var payload = request.Body.ToString();
         ArgumentException.ThrowIfNullOrEmpty(payload);
 
-        var data = JsonConvert.DeserializeObject<T>(payload);
+        var data = JsonConvert.DeserializeObject<T>(payload, JsonConfig.Settings);
 
         if (data is null)
             throw new InvalidOperationException();
