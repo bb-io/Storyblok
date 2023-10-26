@@ -6,6 +6,8 @@
         <Nullable>enable</Nullable>
         <Product>Blackbird Storyblok</Product>
         <Version>1.0.0</Version>
+        <Description>Headless content management system that empowers developers and content teams to create better content experiences</Description>
+        <AssemblyName>Apps.Storyblok</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
