@@ -4,6 +4,7 @@ using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
+using Apps.Storyblok.Models.Request;
 using Apps.Storyblok.Models.Request.Space;
 using Apps.Storyblok.Models.Request.Story;
 using Apps.Storyblok.Models.Response;
@@ -49,16 +50,21 @@ public class StoryActions : StoryblokInvocable
         return response.Story;
     }
 
-    [Action("Get story content", Description = "Get content of a specific story")]
-    public async Task<FileResponse> GetStoryContent(
+    // TODO: Turn richtext fields into HTML.
+    // TODO: Make language code dynamic input.
+    // TODO: Remove language, url, page, text_nodes from exported json
+    [Action("Export story content", Description = "Exports the localizable content to JSON where all the values can be translated.")]
+    public async Task<FileResponse> ExportStoryContent(
         [ActionParameter] SpaceRequest space,
-        [ActionParameter] StoryRequest story)
+        [ActionParameter] StoryRequest story,
+        [ActionParameter] OptionalLanguage language)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/export.json";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
+        request.AddQueryParameter("lang_code", language.Language ?? "default");
 
-        var response = await Client.ExecuteWithErrorHandling<StoryContentResponse>(request);
-        var contentJson = response.Story.Content.ToString();
+        var response = await Client.ExecuteWithErrorHandling(request);
+        var contentJson = response.Content;
 
         return new()
         {
@@ -70,19 +76,24 @@ public class StoryActions : StoryblokInvocable
         };
     }
 
-    [Action("Create story", Description = "Create a new story")]
-    public async Task<StoryEntity> CreateStory(
-        [ActionParameter] SpaceRequest space,
-        [ActionParameter] CreateStoryInput input)
+    // TODO: Turn tagged richtext back into JSOn structure.
+    // TODO: Verify if page, language, url and text_nodes are needed here. If so re-add them in this method.
+    [Action("Import story content", Description = "Imports a translated story export.")]
+    public async Task<StoryEntity> ImportStoryContent(
+    [ActionParameter] SpaceRequest space,
+    [ActionParameter] StoryRequest story,
+    [ActionParameter] ImportRequest import)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/";
-        var request = new StoryblokRequest(endpoint, Method.Post, Creds)
-            .WithJsonBody(new CreateStoryRequest(input), JsonConfig.Settings);
+        var json = Encoding.UTF8.GetString(import.Content.Bytes);
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/import.json";
+        var request = new StoryblokRequest(endpoint, Method.Put, Creds);
+        request.AddJsonBody(new { data = json });
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
     }
-    
+
+    // TODO: Remove content realted inputs.
     [Action("Update story", Description = "Update a specific story")]
     public async Task<StoryEntity> UpdateStory(
         [ActionParameter] SpaceRequest space,
@@ -92,6 +103,20 @@ public class StoryActions : StoryblokInvocable
         var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .WithJsonBody(new UpdateStoryRequest(input), JsonConfig.Settings);
+
+        var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
+        return response.Story;
+    }
+
+    // TODO: Remove content related inputs.
+    [Action("Create story", Description = "Create a new story")]
+    public async Task<StoryEntity> CreateStory(
+        [ActionParameter] SpaceRequest space,
+        [ActionParameter] CreateStoryInput input)
+    {
+        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/";
+        var request = new StoryblokRequest(endpoint, Method.Post, Creds)
+            .WithJsonBody(new CreateStoryRequest(input), JsonConfig.Settings);
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
