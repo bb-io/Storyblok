@@ -10,6 +10,7 @@ using Apps.Storyblok.Models.Request.Story;
 using Apps.Storyblok.Models.Response;
 using Apps.Storyblok.Models.Response.Pagination;
 using Apps.Storyblok.Models.Response.Story;
+using Apps.Storyblok.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -50,18 +51,8 @@ public class StoryActions : StoryblokInvocable
         return response.Story;
     }
 
-    // TODO: Turn richtext fields into HTML.
-
-    // TODO: Even with lang_code default, sometimes some non-localizable fields are sent. F.e. "text_color" or "background-blur".
-    // My hypothesis is that it's because Storyblok will filter all the default-non localizable fields but for custom fields it doesn't know
-    // Whether it should be localized.
-    // Two options: Either we filter-out or we filter-in. Both have pros and cons. Keep a list of things we should filter out will result in still having
-    // Non localizable fields in the future, filter-in will be problematic for custom components as they will have localizable fields that are not on our list.
-    // For now let's choose filter-out and add all keys that end with "text_color", "background-blur", etc. etc.
-
-    // TODO: Make language code dynamic input.
-    // TODO: Remove language, url, page, text_nodes from exported json
-    [Action("Export story content", Description = "Exports the localizable content to JSON where all the values can be translated.")]
+    [Action("Export story content",
+        Description = "Exports the localizable content to JSON where all the values can be translated.")]
     public async Task<FileResponse> ExportStoryContent(
         [ActionParameter] SpaceRequest space,
         [ActionParameter] StoryRequest story,
@@ -74,34 +65,33 @@ public class StoryActions : StoryblokInvocable
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content;
 
+        var html = StoryblokHtmlConverter.GetHtml(contentJson);
         return new()
         {
-            File = new(Encoding.UTF8.GetBytes(contentJson))
+            File = new(html)
             {
-                Name = $"{story.StoryId}.json",
-                ContentType = MediaTypeNames.Application.Json
+                Name = $"{story.StoryId}.html",
+                ContentType = MediaTypeNames.Text.Html
             }
         };
     }
 
-    // TODO: Turn tagged richtext back into JSOn structure.
-    // TODO: Verify if page, language, url and text_nodes are needed here. If so re-add them in this method.
     [Action("Import story content", Description = "Imports a translated story export.")]
     public async Task<StoryEntity> ImportStoryContent(
-    [ActionParameter] SpaceRequest space,
-    [ActionParameter] StoryRequest story,
-    [ActionParameter] ImportRequest import)
+        [ActionParameter] SpaceRequest space,
+        [ActionParameter] StoryRequest story,
+        [ActionParameter] ImportRequest import)
     {
-        var json = Encoding.UTF8.GetString(import.Content.Bytes);
+        var json = StoryblokHtmlConverter.GetJson(import.Content.Bytes, story.StoryId);
+
         var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/import.json";
-        var request = new StoryblokRequest(endpoint, Method.Put, Creds);
-        request.AddJsonBody(new { data = json });
+        var request = new StoryblokRequest(endpoint, Method.Put, Creds)
+            .AddJsonBody(new { data = json });
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
     }
 
-    // TODO: Remove content realted inputs.
     [Action("Update story", Description = "Update a specific story")]
     public async Task<StoryEntity> UpdateStory(
         [ActionParameter] SpaceRequest space,
@@ -116,7 +106,6 @@ public class StoryActions : StoryblokInvocable
         return response.Story;
     }
 
-    // TODO: Remove content related inputs.
     [Action("Create story", Description = "Create a new story")]
     public async Task<StoryEntity> CreateStory(
         [ActionParameter] SpaceRequest space,

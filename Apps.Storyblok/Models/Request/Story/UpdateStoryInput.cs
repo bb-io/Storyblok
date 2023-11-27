@@ -1,10 +1,10 @@
-using File = Blackbird.Applications.Sdk.Common.Files.File;
+using Apps.Storyblok.DataSourceHandlers.EnumHandlers;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Storyblok.Models.Request.Story;
 
 public class UpdateStoryInput
 {
-    public File Content { get; set; }
-    
+    [DataSource(typeof(LanguageDataHandler))]
     public string Lang { get; set; }
 }

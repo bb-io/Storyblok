@@ -1,15 +1,12 @@
-﻿using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Apps.Storyblok.DataSourceHandlers.EnumHandlers;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.Storyblok.Models.Request
+namespace Apps.Storyblok.Models.Request;
+
+public class OptionalLanguage
 {
-    public class OptionalLanguage
-    {
-        [Display("Language")]
-        public string? Language { get; set; }
-    }
+    [Display("Language")]
+    [DataSource(typeof(LanguageDataHandler))]
+    public string? Language { get; set; }
 }

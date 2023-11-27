@@ -24,7 +24,5 @@ public class CreateStoryInput
 
     public bool? Publish { get; set; }
 
-    [Display("Content component")] public string? ContentComponent { get; set; }
-
     [Display("Release ID")] public string? ReleaseId { get; set; }
 }
