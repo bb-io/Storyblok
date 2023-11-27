@@ -21,10 +21,6 @@ public class CreateStoryRequest
             IsStartPage = input.IsStartPage,
             Position = input.Position,
             Path = input.Path,
-            Content = new()
-            {
-                Component = input.ContentComponent
-            }
         };
         Publish = input.Publish is true ? 1 : default;
         ReleaseId = input.ReleaseId;

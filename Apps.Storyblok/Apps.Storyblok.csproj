@@ -4,15 +4,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Product>Storyblok</Product>
-    <Version>1.0.3</Version>
+    <Version>1.1.0</Version>
     <Description>Headless content management system that empowers developers and content teams to create better content experiences</Description>
     <AssemblyName>Apps.Storyblok</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.2.0-alpha3" />
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.12" />
+    <PackageReference Include="Blackbird.Applications.Sdk.Utils.Html" Version="1.0.1" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png"></EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Extensions\" />
   </ItemGroup>
 </Project>
