@@ -1,5 +1,4 @@
 ﻿using System.Net.Mime;
-using System.Text;
 using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
 using Apps.Storyblok.Invocables;
@@ -40,11 +39,9 @@ public class StoryActions : StoryblokInvocable
     }
 
     [Action("Get story", Description = "Get details of a specific story")]
-    public async Task<StoryEntity> GetStory(
-        [ActionParameter] SpaceRequest space,
-        [ActionParameter] StoryRequest story)
+    public async Task<StoryEntity> GetStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
@@ -54,11 +51,10 @@ public class StoryActions : StoryblokInvocable
     [Action("Export story content",
         Description = "Exports the localizable content to JSON where all the values can be translated.")]
     public async Task<FileResponse> ExportStoryContent(
-        [ActionParameter] SpaceRequest space,
         [ActionParameter] StoryRequest story,
         [ActionParameter] OptionalLanguage language)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/export.json";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/export.json";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
         request.AddQueryParameter("lang_code", language.Language ?? "default");
 
@@ -78,13 +74,12 @@ public class StoryActions : StoryblokInvocable
 
     [Action("Import story content", Description = "Imports a translated story export.")]
     public async Task<StoryEntity> ImportStoryContent(
-        [ActionParameter] SpaceRequest space,
         [ActionParameter] StoryRequest story,
         [ActionParameter] ImportRequest import)
     {
         var json = StoryblokHtmlConverter.GetJson(import.Content.Bytes, story.StoryId);
 
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/import.json";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .AddJsonBody(new { data = json });
 
@@ -94,11 +89,10 @@ public class StoryActions : StoryblokInvocable
 
     [Action("Update story", Description = "Update a specific story")]
     public async Task<StoryEntity> UpdateStory(
-        [ActionParameter] SpaceRequest space,
         [ActionParameter] StoryRequest story,
         [ActionParameter] UpdateStoryInput input)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .WithJsonBody(new UpdateStoryRequest(input), JsonConfig.Settings);
 
@@ -120,33 +114,27 @@ public class StoryActions : StoryblokInvocable
     }
 
     [Action("Delete story", Description = "Delete specific story")]
-    public Task DeleteStory(
-        [ActionParameter] SpaceRequest space,
-        [ActionParameter] StoryRequest story)
+    public Task DeleteStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
         var request = new StoryblokRequest(endpoint, Method.Delete, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
     }
 
     [Action("Publish story", Description = "Publish specific story")]
-    public Task PublishStory(
-        [ActionParameter] SpaceRequest space,
-        [ActionParameter] StoryRequest story)
+    public Task PublishStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/publish";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/publish";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
     }
 
     [Action("Unpublish story", Description = "Unpublish specific story")]
-    public Task UnpublishStory(
-        [ActionParameter] SpaceRequest space,
-        [ActionParameter] StoryRequest story)
+    public Task UnpublishStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{space.SpaceId}/stories/{story.StoryId}/unpublish";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/unpublish";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
