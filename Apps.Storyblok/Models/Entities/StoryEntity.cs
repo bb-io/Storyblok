@@ -5,6 +5,8 @@ namespace Apps.Storyblok.Models.Entities;
 public class StoryEntity
 {
     [Display("Name")] public string Name { get; set; }
+    
+    [Display("Name")] public IEnumerable<AlternateEntity>? Alternates { get; set; }
 
     [Display("Parent ID")] public string ParentId { get; set; }
 
@@ -33,6 +35,8 @@ public class StoryEntity
     [Display("Path")] public string Path { get; set; }
 
     [Display("Full slug")] public string FullSlug { get; set; }
+
+    [Display("Root folder")] public string RootFolder => FullSlug.Split("/").First();
 
     [Display("Position")] public int Position { get; set; }
 
