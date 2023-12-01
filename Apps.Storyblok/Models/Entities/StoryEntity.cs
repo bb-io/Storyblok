@@ -6,7 +6,7 @@ public class StoryEntity
 {
     [Display("Name")] public string Name { get; set; }
     
-    [Display("Name")] public IEnumerable<AlternateEntity>? Alternates { get; set; }
+    [Display("Alternates")] public IEnumerable<AlternateEntity>? Alternates { get; set; }
 
     [Display("Parent ID")] public string ParentId { get; set; }
 
