@@ -44,7 +44,7 @@ Storyblok is a headless content management. This Storyblok application primarily
 
 - **List/Get/Create/Delete tasks**
 
-### Events
+## Events
 
 - **On story published**
 - **On story unpublished**
