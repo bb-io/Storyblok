@@ -6,7 +6,7 @@ namespace Apps.Storyblok.Models.Request.Space;
 
 public class SpaceRequest
 {
-    [Display("Space ID")]
+    [Display("Space")]
     [DataSource(typeof(SpaceDataHandler))]
     public string SpaceId { get; set; }
 }
