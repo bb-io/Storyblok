@@ -111,7 +111,7 @@ public static class StoryblokHtmlConverter
         translatableNodes.ForEach(x =>
         {
             var property = (x as JProperty)!;
-            var node = doc.CreateElement("div");
+            var node = doc.CreateElement("span");
 
             node.SetAttributeValue(RichTextComponentPath, property.Path);
             node.InnerHtml = property.First!.Value<string>();
