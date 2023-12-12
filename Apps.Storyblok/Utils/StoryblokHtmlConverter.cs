@@ -112,7 +112,6 @@ public static class StoryblokHtmlConverter
         contentNodes.ForEach(x =>
         {
             var type = x.Parent!["type"]!.ToString();
-
             if (type == "doc")
                 return;
 
