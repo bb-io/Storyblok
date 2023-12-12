@@ -20,7 +20,7 @@ public static class StoryblokHtmlConverter
     private static readonly IEnumerable<string> SkippableFields = new[] { "language", "url", "text_nodes", "page" };
 
     private static readonly IEnumerable<string> StyleFields = new[]
-        { "text_color", "background_blur", "background_brightness", "image_layout" };
+        { "text_color", "background_blur", "background_brightness", "image_layout", "author" };
 
     public static byte[] GetHtml(string json)
     {
