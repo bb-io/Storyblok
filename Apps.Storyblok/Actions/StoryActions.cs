@@ -56,7 +56,7 @@ public class StoryActions : StoryblokInvocable
     {
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/export.json";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
-        request.AddQueryParameter("lang_code", language.Language ?? "default");
+        request.AddQueryParameter("lang_code", language.Language ?? string.Empty);
 
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content;
