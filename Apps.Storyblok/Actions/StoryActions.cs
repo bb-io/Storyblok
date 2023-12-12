@@ -59,7 +59,7 @@ public class StoryActions : StoryblokInvocable
         request.AddQueryParameter("lang_code", language.Language ?? string.Empty);
 
         var response = await Client.ExecuteWithErrorHandling(request);
-        var contentJson = response.Content;
+        var contentJson = response.Content!;
 
         var html = StoryblokHtmlConverter.GetHtml(contentJson);
         return new()
