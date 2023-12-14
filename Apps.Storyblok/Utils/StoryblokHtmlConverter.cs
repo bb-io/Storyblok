@@ -11,10 +11,12 @@ public static class StoryblokHtmlConverter
 {
     private const string IdAttr = "id";
     private const string OriginalRichTextAttr = "original";
-    private const string RichTextComponentPath = "path";
+    private const string OriginalTableAttr = "original-table";
+    private const string ComponentPath = "path";
     private const string StyleValueAttr = "style-value";
 
     private const string RichTextId = "richtext";
+    private const string TableId = "table:table";
     private const string PageIdNode = "page";
 
     private static readonly IEnumerable<string> SkippableFields = new[] { "language", "url", "text_nodes", "page" };
@@ -22,7 +24,7 @@ public static class StoryblokHtmlConverter
     private static readonly IEnumerable<string> StyleFields = new[]
         { "text_color", "background_blur", "background_brightness", "image_layout", "author" };
 
-    public static byte[] GetHtml(string json)
+    public static byte[] ParseJson(string json)
     {
         var translatableData = JsonConvert.DeserializeObject<Dictionary<string, string>>(json)!
             .Where(x => !SkippableFields.Contains(x.Key))
@@ -39,7 +41,13 @@ public static class StoryblokHtmlConverter
 
             if (x.Key.Contains(RichTextId))
             {
-                ParseRichText(doc, node, x.Value);
+                ParseRichTextToHtml(doc, node, x.Value);
+                return;
+            }
+
+            if (x.Key.EndsWith(TableId))
+            {
+                ParseTableToHtml(doc, node, x.Value);
                 return;
             }
 
@@ -55,7 +63,7 @@ public static class StoryblokHtmlConverter
         return Encoding.UTF8.GetBytes(doc.DocumentNode.OuterHtml);
     }
 
-    public static string GetJson(byte[] html, string pageId)
+    public static string ParseHtml(byte[] html, string pageId)
     {
         var htmlDoc = Encoding.UTF8.GetString(html).AsHtmlDocument();
         var translatableNodes = htmlDoc.DocumentNode.SelectSingleNode("/html/body")
@@ -74,22 +82,53 @@ public static class StoryblokHtmlConverter
     {
         var componentId = node.Attributes[IdAttr].Value.ToString();
         var styleValue = node.Attributes[StyleValueAttr]?.Value;
-        var originalAttr = node.Attributes[OriginalRichTextAttr]?.Value;
+
+        if (node.Attributes[OriginalTableAttr] is not null)
+            return ParseTableToJson(node);
+
+        if (node.Attributes[OriginalRichTextAttr] is not null)
+            return ParseRichTextToJson(node);
 
         if (styleValue != null)
             return new(componentId, styleValue);
 
-        if (originalAttr == null)
-            return new(componentId, node.InnerText);
+        return new(componentId, node.InnerText);
+    }
 
-        var richText = JObject.Parse(HttpUtility.HtmlDecode(originalAttr));
+    private static KeyValuePair<string, string> ParseTableToJson(HtmlNode node)
+    {
+        var componentId = node.Attributes[IdAttr]!.Value.ToString();
+        var originalAttr = node.Attributes[OriginalTableAttr]!.Value;
+        
+        var table = JObject.Parse(HttpUtility.HtmlDecode(originalAttr));
+        var tableChildren = node.Descendants()
+            .Where(x => x.Attributes.Contains(ComponentPath))
+            .ToList();
+        
+        tableChildren.ForEach(x =>
+        {
+            var path = x.Attributes[ComponentPath].Value;
+            var token = table.SelectToken(path)!;
+
+            ((JValue)token).Value = x.InnerText;
+        });
+
+        return new(componentId, table.ToString());
+    }
+    
+    private static KeyValuePair<string, string> ParseRichTextToJson(HtmlNode node)
+    {
+        var componentId = node.Attributes[IdAttr].Value.ToString();
+        var originalRtAttr = node.Attributes[OriginalRichTextAttr]!.Value;
+
+        var richText = JObject.Parse(HttpUtility.HtmlDecode(originalRtAttr));
         var richTextChildren = node.Descendants()
-            .Where(x => x.Attributes.Contains(RichTextComponentPath))
+            .Where(x => x.Attributes.Contains(ComponentPath))
             .ToList();
 
         richTextChildren.ForEach(x =>
         {
-            var path = x.Attributes[RichTextComponentPath].Value;
+            var path = x.Attributes[ComponentPath].Value;
             var token = richText.SelectToken(path)!;
 
             ((JValue)token).Value = x.InnerText;
@@ -97,8 +136,8 @@ public static class StoryblokHtmlConverter
 
         return new(componentId, richText.ToString());
     }
-
-    private static void ParseRichText(HtmlDocument doc, HtmlNode richTextNode, string richTextJson)
+    
+    private static void ParseRichTextToHtml(HtmlDocument doc, HtmlNode richTextNode, string richTextJson)
     {
         richTextNode.SetAttributeValue(OriginalRichTextAttr, richTextJson);
 
@@ -128,11 +167,33 @@ public static class StoryblokHtmlConverter
                 var property = (x as JProperty)!;
                 var node = doc.CreateElement("span");
 
-                node.SetAttributeValue(RichTextComponentPath, property.Path);
+                node.SetAttributeValue(ComponentPath, property.Path);
                 node.InnerHtml = property.First!.Value<string>();
 
                 richTextContentNode.AppendChild(node);
             });
+        });
+    }
+
+    private static void ParseTableToHtml(HtmlDocument doc, HtmlNode tableNode, string tableJson)
+    {
+        tableNode.SetAttributeValue(OriginalTableAttr, tableJson);
+
+        var table = JObject.Parse(tableJson);
+
+        var valueNodes = table
+            .Descendants()
+            .Where(x => (x as JProperty)?.Name == "value")
+            .ToList();
+
+        valueNodes.ForEach(x =>
+        {
+            var property = (x as JProperty)!;
+            var talbeValueNode = doc.CreateElement("div");
+
+            talbeValueNode.SetAttributeValue(ComponentPath, property.Path);
+            talbeValueNode.InnerHtml = property.First!.Value<string>();
+            tableNode.AppendChild(talbeValueNode);
         });
     }
 
