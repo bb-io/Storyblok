@@ -61,7 +61,7 @@ public class StoryActions : StoryblokInvocable
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content!;
 
-        var html = StoryblokHtmlConverter.GetHtml(contentJson);
+        var html = StoryblokHtmlConverter.ParseJson(contentJson);
         return new()
         {
             File = new(html)
@@ -77,7 +77,7 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] StoryRequest story,
         [ActionParameter] ImportRequest import)
     {
-        var json = StoryblokHtmlConverter.GetJson(import.Content.Bytes, story.StoryId);
+        var json = StoryblokHtmlConverter.ParseHtml(import.Content.Bytes, story.StoryId);
 
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
