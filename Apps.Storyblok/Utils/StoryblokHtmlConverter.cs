@@ -147,6 +147,25 @@ public static class StoryblokHtmlConverter
             .Descendants()
             .Where(x => (x as JProperty)?.Name == "content")
             .ToList();
+        
+        var linkNodes = richText
+            .Descendants()
+            .Where(x => (x as JProperty)?.Name == "href")
+            .ToList();
+
+        var linkNode = doc.CreateElement("div");
+        richTextNode.AppendChild(linkNode);
+
+        linkNodes.ForEach(x =>
+        {
+            var property = (x as JProperty)!;
+            var node = doc.CreateElement("div");
+
+            node.SetAttributeValue(ComponentPath, property.Path);
+            node.InnerHtml = property.First!.Value<string>();
+
+            linkNode.AppendChild(node);
+        });
 
         contentNodes.ForEach(x =>
         {
@@ -159,7 +178,7 @@ public static class StoryblokHtmlConverter
 
             var translatableNodes = x.Parent
                 .Descendants()
-                .Where(x => (x as JProperty)?.Name == "text")
+                .Where(x => (x as JProperty)?.Name is "text")
                 .ToList();
 
             translatableNodes.ForEach(x =>
