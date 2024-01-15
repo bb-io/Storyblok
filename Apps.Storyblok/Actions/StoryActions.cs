@@ -1,6 +1,7 @@
 ﻿using System.Net.Mime;
 using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
+using Apps.Storyblok.ContentConverters;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request;
@@ -9,7 +10,6 @@ using Apps.Storyblok.Models.Request.Story;
 using Apps.Storyblok.Models.Response;
 using Apps.Storyblok.Models.Response.Pagination;
 using Apps.Storyblok.Models.Response.Story;
-using Apps.Storyblok.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -65,7 +65,7 @@ public class StoryActions : StoryblokInvocable
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content!;
 
-        var html = StoryblokHtmlConverter.ParseJson(contentJson);
+        var html = StoryblokToHtmlConverter.ToHtml(contentJson);
         using var stream = new MemoryStream(html);
         var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.StoryId}.html");
         return new() { File = file };
@@ -76,8 +76,10 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] StoryRequest story,
         [ActionParameter] ImportRequest import)
     {
-        var fileBytes = _fileManagementClient.DownloadAsync(import.Content).Result.GetByteData().Result;
-        var json = StoryblokHtmlConverter.ParseHtml(fileBytes, story.StoryId);
+        var fileStream = await _fileManagementClient.DownloadAsync(import.Content);
+        var fileBytes = await fileStream.GetByteData();
+        
+        var json = StoryblokToJsonConverter.ToJson(fileBytes, story.StoryId);
 
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
