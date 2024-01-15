@@ -13,8 +13,10 @@ using Apps.Storyblok.Utils;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using RestSharp;
 
 namespace Apps.Storyblok.Actions;
@@ -22,8 +24,10 @@ namespace Apps.Storyblok.Actions;
 [ActionList]
 public class StoryActions : StoryblokInvocable
 {
-    public StoryActions(InvocationContext invocationContext) : base(invocationContext)
+    private readonly IFileManagementClient _fileManagementClient;
+    public StoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(invocationContext)
     {
+        _fileManagementClient = fileManagementClient;
     }
 
     [Action("List stories", Description = "List all stories in your space")]
@@ -62,14 +66,9 @@ public class StoryActions : StoryblokInvocable
         var contentJson = response.Content!;
 
         var html = StoryblokHtmlConverter.ParseJson(contentJson);
-        return new()
-        {
-            File = new(html)
-            {
-                Name = $"{story.StoryId}.html",
-                ContentType = MediaTypeNames.Text.Html
-            }
-        };
+        using var stream = new MemoryStream(html);
+        var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.StoryId}.html");
+        return new() { File = file };
     }
 
     [Action("Import story content", Description = "Imports a translated story export.")]
@@ -77,7 +76,8 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] StoryRequest story,
         [ActionParameter] ImportRequest import)
     {
-        var json = StoryblokHtmlConverter.ParseHtml(import.Content.Bytes, story.StoryId);
+        var fileBytes = _fileManagementClient.DownloadAsync(import.Content).Result.GetByteData().Result;
+        var json = StoryblokHtmlConverter.ParseHtml(fileBytes, story.StoryId);
 
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
