@@ -13,5 +13,6 @@ public static class ConverterConstants
     public const string RichTextId = "richtext";
     public const string TableId = "table:table";
     public const string MarkdownTableId = "table:markdownTable";
+    public const string ListId = "list";
     public const string PageIdNode = "page";
 }
