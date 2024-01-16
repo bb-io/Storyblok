@@ -10,7 +10,7 @@ public static class StoryblokToHtmlConverter
 {
     private static readonly IEnumerable<string> SkippableFields = new[] { "language", "url", "text_nodes", "page" };
 
-    private static readonly IEnumerable<string> StyleFields = new[]
+    private static readonly IEnumerable<string> UntranslatableFields = new[]
         { "text_color", "background_blur", "background_brightness", "image_layout", "author" };
 
     public static byte[] ToHtml(string json)
@@ -23,7 +23,7 @@ public static class StoryblokToHtmlConverter
 
         translatableData.ForEach(x =>
         {
-            var node = doc.CreateElement("div");
+            var node = doc.CreateElement(HtmlConstants.Div);
 
             node.SetAttributeValue(ConverterConstants.IdAttr, x.Key);
             bodyNode.AppendChild(node);
@@ -46,7 +46,7 @@ public static class StoryblokToHtmlConverter
                 return;
             }
 
-            if (StyleFields.Any(y => x.Key.EndsWith(y)))
+            if (UntranslatableFields.Any(y => x.Key.EndsWith(y)))
             {
                 node.SetAttributeValue(ConverterConstants.StyleValueAttr, x.Value);
                 return;
@@ -74,13 +74,13 @@ public static class StoryblokToHtmlConverter
             .Where(x => (x as JProperty)?.Name == "href" && x.Parent!["linktype"]!.ToString() == "url")
             .ToList();
 
-        var linkNode = doc.CreateElement("div");
+        var linkNode = doc.CreateElement(HtmlConstants.Div);
         richTextNode.AppendChild(linkNode);
 
         linkNodes.ForEach(x =>
         {
             var property = (x as JProperty)!;
-            var node = doc.CreateElement("div");
+            var node = doc.CreateElement(HtmlConstants.Div);
 
             node.SetAttributeValue(ConverterConstants.ComponentPath, property.Path);
             node.InnerHtml = property.First!.Value<string>();
@@ -92,7 +92,7 @@ public static class StoryblokToHtmlConverter
         {
             var type = x["type"]!.ToString();
 
-            var richTextContentNode = doc.CreateElement(GetHtmlTag(type));
+            var richTextContentNode = doc.CreateElement(GetRichTextContentTag(type));
             richTextNode.AppendChild(richTextContentNode);
 
             var translatableNodes = x
@@ -103,7 +103,9 @@ public static class StoryblokToHtmlConverter
             translatableNodes.ForEach(x =>
             {
                 var property = (x as JProperty)!;
-                var node = doc.CreateElement("span");
+
+                var nodeTag = GetRichTextItemTag(type);
+                var node = doc.CreateElement(nodeTag);
 
                 node.SetAttributeValue(ConverterConstants.ComponentPath, property.Path);
                 node.InnerHtml = property.First!.Value<string>();
@@ -127,7 +129,7 @@ public static class StoryblokToHtmlConverter
         valueNodes.ForEach(x =>
         {
             var property = (x as JProperty)!;
-            var tableValueNode = doc.CreateElement("div");
+            var tableValueNode = doc.CreateElement(HtmlConstants.Div);
 
             tableValueNode.SetAttributeValue(ConverterConstants.ComponentPath, property.Path);
             tableValueNode.InnerHtml = property.First!.Value<string>();
@@ -140,7 +142,7 @@ public static class StoryblokToHtmlConverter
         var tableElements = markdownTable.Split("|").SkipLast(1).Skip(1).ToList();
         tableElements.ForEach(x =>
         {
-            var tableElementNode = doc.CreateElement("p");
+            var tableElementNode = doc.CreateElement(HtmlConstants.Paragraph);
 
             tableElementNode.SetAttributeValue(ConverterConstants.LeadingSpacesAttr,
                 (x.Length - x.TrimStart(' ').Length).ToString());
@@ -155,21 +157,29 @@ public static class StoryblokToHtmlConverter
     private static (HtmlDocument document, HtmlNode bodyNode) PrepareEmptyHtmlDocument()
     {
         var htmlDoc = new HtmlDocument();
-        var htmlNode = htmlDoc.CreateElement("html");
+        var htmlNode = htmlDoc.CreateElement(HtmlConstants.Html);
         htmlDoc.DocumentNode.AppendChild(htmlNode);
-        htmlNode.AppendChild(htmlDoc.CreateElement("head"));
+        htmlNode.AppendChild(htmlDoc.CreateElement(HtmlConstants.Head));
 
-        var bodyNode = htmlDoc.CreateElement("body");
+        var bodyNode = htmlDoc.CreateElement(HtmlConstants.Body);
         htmlNode.AppendChild(bodyNode);
 
         return (htmlDoc, bodyNode);
     }
 
-    private static string GetHtmlTag(string type)
+    private static string GetRichTextContentTag(string type)
         => type switch
         {
-            "heading" => "h1",
-            "paragraph" => "p",
-            _ => "div"
+            "heading" => HtmlConstants.H1,
+            "paragraph" => HtmlConstants.Paragraph,
+            _ => HtmlConstants.Div
         };
+
+    private static string GetRichTextItemTag(string type)
+    {
+        if (type.Contains(ConverterConstants.ListId))
+            return HtmlConstants.Div;
+
+        return HtmlConstants.Span;
+    }
 }
