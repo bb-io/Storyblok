@@ -54,7 +54,7 @@ public class StoryEntity
 
     [Display("Release IDs")] public IEnumerable<string> ReleaseIds { get; set; }
 
-    [Display("Stage")] public string Stage { get; set; }
+    [Display("Stage")] public StageEntity? Stage { get; set; }
 
     [Display("Default Root")] public string DefaultRoot { get; set; }
 
