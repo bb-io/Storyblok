@@ -25,7 +25,9 @@ namespace Apps.Storyblok.Actions;
 public class StoryActions : StoryblokInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    public StoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(invocationContext)
+
+    public StoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(
+        invocationContext)
     {
         _fileManagementClient = fileManagementClient;
     }
@@ -78,7 +80,7 @@ public class StoryActions : StoryblokInvocable
     {
         var fileStream = await _fileManagementClient.DownloadAsync(import.Content);
         var fileBytes = await fileStream.GetByteData();
-        
+
         var json = StoryblokToJsonConverter.ToJson(fileBytes, story.StoryId);
 
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
