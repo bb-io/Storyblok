@@ -142,7 +142,7 @@ public static class StoryblokToHtmlConverter
         var tableElements = markdownTable.Split("|").SkipLast(1).Skip(1).ToList();
         tableElements.ForEach(x =>
         {
-            var tableElementNode = doc.CreateElement(HtmlConstants.Paragraph);
+            var tableElementNode = doc.CreateElement(HtmlConstants.Div);
 
             tableElementNode.SetAttributeValue(ConverterConstants.LeadingSpacesAttr,
                 (x.Length - x.TrimStart(' ').Length).ToString());
