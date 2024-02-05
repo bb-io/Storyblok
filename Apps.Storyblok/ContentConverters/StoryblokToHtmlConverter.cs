@@ -95,23 +95,13 @@ public static class StoryblokToHtmlConverter
             var richTextContentNode = doc.CreateElement(GetRichTextContentTag(type));
             richTextNode.AppendChild(richTextContentNode);
 
-            var translatableNodes = x
-                .Descendants()
-                .Where(x => (x as JProperty)?.Name is "text")
-                .ToList();
-
-            translatableNodes.ForEach(x =>
+            if (type.Contains("list"))
             {
-                var property = (x as JProperty)!;
+                ConvertListToHtml(doc, richTextContentNode, x);
+                return;
+            }
 
-                var nodeTag = GetRichTextItemTag(type);
-                var node = doc.CreateElement(nodeTag);
-
-                node.SetAttributeValue(ConverterConstants.ComponentPath, property.Path);
-                node.InnerHtml = property.First!.Value<string>();
-
-                richTextContentNode.AppendChild(node);
-            });
+            ConvertTranslatableDataToHtml(doc, richTextContentNode, x);
         });
     }
 
@@ -153,6 +143,41 @@ public static class StoryblokToHtmlConverter
             node.AppendChild(tableElementNode);
         });
     }
+    
+    private static void ConvertListToHtml(HtmlDocument doc, HtmlNode richTextContentNode, JObject listContentNode)
+    {
+        var listItems = listContentNode.Descendants()
+            .Where(x => x is JObject jObject && jObject["type"]?.ToString() == "list_item")
+            .OfType<JObject>()
+            .ToList();
+                
+        listItems.ForEach(x =>
+        {
+            var listItemNode = doc.CreateElement(HtmlConstants.Div);
+            richTextContentNode.AppendChild(listItemNode);
+                    
+            ConvertTranslatableDataToHtml(doc, listItemNode, x);
+        });
+    }
+    
+    private static void ConvertTranslatableDataToHtml(HtmlDocument doc, HtmlNode contentNode, JObject contentObj)
+    {
+        var translatableNodes = contentObj
+            .Descendants()
+            .Where(x => (x as JProperty)?.Name is "text")
+            .ToList();
+
+        translatableNodes.ForEach(x =>
+        {
+            var property = (x as JProperty)!;
+            var node = doc.CreateElement(HtmlConstants.Span);
+
+            node.SetAttributeValue(ConverterConstants.ComponentPath, property.Path);
+            node.InnerHtml = property.First!.Value<string>();
+
+            contentNode.AppendChild(node);
+        });
+    }
 
     private static (HtmlDocument document, HtmlNode bodyNode) PrepareEmptyHtmlDocument()
     {
@@ -174,12 +199,4 @@ public static class StoryblokToHtmlConverter
             "paragraph" => HtmlConstants.Paragraph,
             _ => HtmlConstants.Div
         };
-
-    private static string GetRichTextItemTag(string type)
-    {
-        if (type.Contains(ConverterConstants.ListId))
-            return HtmlConstants.Div;
-
-        return HtmlConstants.Span;
-    }
 }
