@@ -95,7 +95,7 @@ public static class StoryblokToJsonConverter
             var leadingSpaces = int.Parse(x.Attributes[ConverterConstants.LeadingSpacesAttr].Value);
             var trailingSpaces = int.Parse(x.Attributes[ConverterConstants.TrailingSpacesAttr].Value);
 
-            markdown.Append($"|{new(' ', leadingSpaces)}{x.InnerText}{new(' ', trailingSpaces)}");
+            markdown.Append($"|{new(' ', leadingSpaces)}{x.InnerHtml}{new(' ', trailingSpaces)}");
         });
 
         return markdown + "|";
