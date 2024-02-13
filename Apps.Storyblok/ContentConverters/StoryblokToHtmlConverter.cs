@@ -60,6 +60,9 @@ public static class StoryblokToHtmlConverter
 
     private static void ConvertRichTextToHtml(HtmlDocument doc, HtmlNode richTextNode, string richTextJson)
     {
+        if (string.IsNullOrWhiteSpace(richTextJson))
+            return;
+        
         richTextNode.SetAttributeValue(ConverterConstants.OriginalRichTextAttr, richTextJson);
 
         var richText = JObject.Parse(richTextJson);
@@ -107,6 +110,9 @@ public static class StoryblokToHtmlConverter
 
     private static void ConvertTableToHtml(HtmlDocument doc, HtmlNode tableNode, string tableJson)
     {
+        if(string.IsNullOrWhiteSpace(tableJson))
+            return;
+        
         tableNode.SetAttributeValue(ConverterConstants.OriginalTableAttr, tableJson);
 
         var table = JObject.Parse(tableJson);
@@ -129,6 +135,9 @@ public static class StoryblokToHtmlConverter
 
     private static void ConvertMarkdownToHtml(HtmlDocument doc, HtmlNode node, string markdownTable)
     {
+        if (string.IsNullOrWhiteSpace(markdownTable))
+            return;
+        
         var tableElements = markdownTable.Split("|").SkipLast(1).Skip(1).ToList();
         tableElements.ForEach(x =>
         {
