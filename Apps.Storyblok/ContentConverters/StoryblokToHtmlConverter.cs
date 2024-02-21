@@ -155,8 +155,7 @@ public static class StoryblokToHtmlConverter
     
     private static void ConvertListToHtml(HtmlDocument doc, HtmlNode richTextContentNode, JObject listContentNode)
     {
-        var listItems = listContentNode.Descendants()
-            .Where(x => x is JObject jObject && jObject["type"]?.ToString() == "list_item")
+        var listItems = listContentNode["content"]!
             .OfType<JObject>()
             .ToList();
                 
