@@ -74,7 +74,7 @@ public static class StoryblokToHtmlConverter
 
         var linkNodes = richText
             .Descendants()
-            .Where(x => (x as JProperty)?.Name == "href" && x.Parent!["linktype"]!.ToString() == "url")
+            .Where(x => (x as JProperty)?.Name == "href" && x.Parent!["linktype"]!.ToString() != "story")
             .ToList();
 
         var linkNode = doc.CreateElement(HtmlConstants.Div);
