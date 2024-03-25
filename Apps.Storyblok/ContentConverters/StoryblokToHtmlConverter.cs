@@ -11,7 +11,10 @@ public static class StoryblokToHtmlConverter
     private static readonly IEnumerable<string> SkippableFields = new[] { "language", "url", "text_nodes", "page" };
 
     private static readonly IEnumerable<string> UntranslatableFields = new[]
-        { "text_color", "background_blur", "background_brightness", "image_layout", "author" };
+    {
+        "text_color", "background_blur", "background_brightness", "image_layout", "author", "eventLabel", "eventAction",
+        "eventElement"
+    };
 
     public static byte[] ToHtml(string json)
     {
