@@ -1,10 +1,10 @@
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Storyblok.DataSourceHandlers.EnumHandlers;
 
-public class LanguageDataHandler : EnumDataHandler
+public class LanguageDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    public Dictionary<string, string> GetData() => new()
     {
         { "af", "Afrikaans" },
         { "sq", "Albanian" },
