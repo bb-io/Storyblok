@@ -60,14 +60,7 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] StoryRequest story,
         [ActionParameter] OptionalLanguage language)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/export.json";
-        var request = new StoryblokRequest(endpoint, Method.Get, Creds);
-        request.AddQueryParameter("lang_code", language.Language ?? string.Empty);
-
-        var response = await Client.ExecuteWithErrorHandling(request);
-        var contentJson = response.Content!;
-
-        var html = StoryblokToHtmlConverter.ToHtml(contentJson);
+        var html = await LocalizationProvider.ExportStoryContent(story, language);
         using var stream = new MemoryStream(html);
         var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.StoryId}.html");
         return new() { File = file };

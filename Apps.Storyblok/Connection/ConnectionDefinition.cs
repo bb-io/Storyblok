@@ -15,7 +15,14 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new(CredsNames.ApiToken) { DisplayName = "API Key", Sensitive = true }
+                new(CredsNames.ApiToken) { DisplayName = "API Key", Sensitive = true },
+                new(CredsNames.LocalizationLevel) { 
+                    DisplayName = "Localization level",
+                    DataItems = [
+                        new(CredsNames.FieldLocalizationLevel, "Field level"),
+                        new(CredsNames.FolderLocalizationLevel, "Folder level")
+                    ]
+                }
             }
         }
     };
