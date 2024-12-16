@@ -65,4 +65,6 @@ public class StoryEntity
     [Display("Tag list")] public IEnumerable<string> TagList { get; set; }
 
     [Display("Cannot view")] public bool CannotView { get; set; }
+
+    [DefinitionIgnore] public object Content { get; set; }
 }
