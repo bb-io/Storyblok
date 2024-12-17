@@ -4,7 +4,7 @@ public class UpdateStoryRequest
 {
     public UpdateStoryPayload Story { get; set; }
 
-    public UpdateStoryRequest(UpdateStoryInput input)
+    public UpdateStoryRequest(LanguageRequest input)
     {
         Story = new()
         {

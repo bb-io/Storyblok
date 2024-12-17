@@ -15,6 +15,7 @@
         <PackageReference Include="Blackbird.Applications.Sdk.Utils.Html" Version="1.0.1" />
         <PackageReference Include="Markdig" Version="0.38.0" />
         <PackageReference Include="ProseMirror.Serializer" Version="2.3.0" />
+        <PackageReference Include="ReverseMarkdown" Version="4.6.0" />
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
