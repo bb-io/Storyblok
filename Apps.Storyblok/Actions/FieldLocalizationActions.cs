@@ -3,7 +3,6 @@ using Apps.Storyblok.ContentConverters;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request.Story;
-using Apps.Storyblok.Models.Request;
 using Apps.Storyblok.Models.Response.Story;
 using Apps.Storyblok.Models.Response;
 using Blackbird.Applications.Sdk.Common.Actions;
@@ -17,8 +16,6 @@ using Newtonsoft.Json.Linq;
 using Apps.Storyblok.Models.Response.Component;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using HtmlAgilityPack;
-using ProseMirror.Serializer.Html;
-using ProseMirror.Model;
 using Markdig;
 using Apps.Storyblok.ContentConverters.Constants;
 using System.Text;
@@ -26,6 +23,8 @@ using Blackbird.Applications.Sdk.Utils.Html.Extensions;
 using ReverseMarkdown;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using RtfPipe;
+using Blackbird.Applications.Sdk.Utils.RichTextConverter;
 
 namespace Apps.Storyblok.Actions;
 [ActionList]
@@ -66,7 +65,7 @@ public class FieldLocalizationActions : StoryblokInvocable
         [ActionParameter] TranslateStoryWithHtmlRequest translateStoryWithHtmlRequest)
     {
         var fileStream = await _fileManagementClient.DownloadAsync(translateStoryWithHtmlRequest.File);
-        var fileBytes =  await fileStream.GetByteData();
+        var fileBytes = await fileStream.GetByteData();
         var html = Encoding.UTF8.GetString(fileBytes);
 
         var endpoint = $"/v1/spaces/{storyRequest.SpaceId}/stories/{storyRequest.StoryId}";
@@ -139,7 +138,7 @@ public class FieldLocalizationActions : StoryblokInvocable
                         localizableContentHtml = HtmlNode.CreateNode("<div></div>");
                         var richText = content[componentKey].ToString();
                         if (string.IsNullOrWhiteSpace(richText)) continue;
-                        localizableContentHtml.InnerHtml = ConvertRichTextToHtml(richText);
+                        localizableContentHtml.InnerHtml = ConvertRichTextToHtml(content[componentKey].ToObject<JObject>());
                         break;
                     case "markdown":
                         localizableContentHtml = HtmlNode.CreateNode("<div></div>");
@@ -172,6 +171,8 @@ public class FieldLocalizationActions : StoryblokInvocable
         var htmlBody = translatedHtml.AsHtmlDocument().DocumentNode.SelectSingleNode("/html/body");
         var content = JObject.Parse(storyEntity.Content.ToString());
         await TranslateStoryContentRecursively(content, htmlBody.ChildNodes.Where(x => x.Name == "div").First(), spaceId, targetLanguage);
+
+        var test = content.ToString();
 
         var endpoint = $"/v1/spaces/{spaceId}/stories/{storyEntity.Id}";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds);
@@ -224,7 +225,7 @@ public class FieldLocalizationActions : StoryblokInvocable
                         content[translatedFieldName] = htmlElement.InnerHtml;
                         break;
                     case "richtext":
-                        //content[translatedFieldName] = JObject.Parse(ConvertHtmlToRichText(htmlElement.InnerHtml)); 
+                        content[translatedFieldName] = ConvertHtmlToRichText(htmlElement.InnerHtml);
                         break;
                     case "markdown":
                         var reverseMarkdownConverter = new Converter();
@@ -260,33 +261,16 @@ public class FieldLocalizationActions : StoryblokInvocable
         return components.First();
     }
 
-    private string ConvertRichTextToHtml(string richText)
+    private string ConvertRichTextToHtml(JObject richtextObject)
     {
-        try
-        {
-            richText = richText.Replace("list_item", "listItem");
-            var proseMirrorNode = ProseMirror.Serializer.JSon.JSonSerializer.Deserialize<Node>(richText);
-            var resultHtml = HtmlSerializer.Serialize(proseMirrorNode);
-            resultHtml = resultHtml.Replace("\r\n", "");
-            return resultHtml;
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"Error during converting rich text to html");
-        }
+        var converter = new RichTextToHtmlConverter("type", "text", "marks", "type", "attrs");
+        return converter.ToHtml(richtextObject);
     }
-    private string ConvertHtmlToRichText(string html)
+
+    private JObject ConvertHtmlToRichText(string html)
     {
-        try
-        {
-            var richText = ProseMirror.Serializer.JSon.JSonSerializer.Serialize(html, true);
-            richText = richText.Replace("listItem", "list_item");
-            return richText;
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"Error during converting html to rich text");
-        }
+        var converter = new HtmlToRichTextConverter("type", "text", "marks", "type", "attrs", "doc");
+        return converter.ToRichText(html);
     }
 
     private bool IgnoreImages(GetStoryAsHtmlRequest getStoryAsHtmlRequest) => 
