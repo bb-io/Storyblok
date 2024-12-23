@@ -39,6 +39,8 @@ Storyblok is a headless content management. This Storyblok application primarily
 - **Import story content** updates story content from an HTML file.
 - **List/Get/Create/Update/Delete stories**
 - **Publish/Unpublish story**
+- **Get story as HTML for translation** gets story as an HTML file for field level localization.
+- **Translate story from HTML file** updates story from an HTML file using field level localization.
 
 ### Tasks
 
