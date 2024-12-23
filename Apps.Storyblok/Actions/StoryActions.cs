@@ -94,7 +94,7 @@ public class StoryActions : StoryblokInvocable
     [Action("Update story", Description = "Update a specific story")]
     public async Task<StoryEntity> UpdateStory(
         [ActionParameter] StoryRequest story,
-        [ActionParameter] UpdateStoryInput input)
+        [ActionParameter] LanguageRequest input)
     {
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
