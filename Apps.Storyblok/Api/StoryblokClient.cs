@@ -1,6 +1,7 @@
 ﻿using Apps.Storyblok.Constants;
 using Apps.Storyblok.Models.Response;
 using Apps.Storyblok.Models.Response.Pagination.Base;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
@@ -21,31 +22,32 @@ public class StoryblokClient : BlackBirdRestClient
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
+       
+        if (response == null)
+        {
+            return new PluginApplicationException($"Error: {response.ErrorMessage}");
+        }
+
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            return new PluginApplicationException($"Error: {response.ErrorMessage}");
+        }
+
         var responseContent = response.Content!;
-
         try
         {
-            var errorStrings = JsonConvert.DeserializeObject<string[]>(responseContent);
-
-            if (errorStrings is not null && errorStrings.Any())
-                return new(string.Join("; ", errorStrings));
+            var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(responseContent, JsonSettings);
+            if (errorResponse?.Error != null)
+            {
+                return new PluginApplicationException(errorResponse.Error);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignored
-        }
-
-        try
-        {
-            var error = JsonConvert.DeserializeObject<ErrorResponse>(responseContent)!;
-            return new(error.Error ?? responseContent);
-        }
-        catch
-        {
-            // ignored
+            return new PluginApplicationException($"Error: {ex.Message}. Raw content: {responseContent}", ex);
         }
 
-        return new(responseContent);
+        return new PluginApplicationException($"Error: {responseContent}");
     }
 
     public async Task<List<TV>> Paginate<T, TV>(RestRequest request) where T : PaginationResponse<TV>
