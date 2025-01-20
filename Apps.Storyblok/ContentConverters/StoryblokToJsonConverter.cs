@@ -32,7 +32,7 @@ public static class StoryblokToJsonConverter
             throw new PluginMisconfigurationException("HtmlNode is null. Please check the input and ensure it is configured correctly.");
 
         if (!node.Attributes.Contains(ConverterConstants.IdAttr))
-            throw new PluginMisconfigurationException($"The required attribute '{ConverterConstants.IdAttr}' is missing in the node. Please verify the input configuration.");
+            throw new PluginMisconfigurationException($"The required attribute '{ConverterConstants.IdAttr}' is missing in the node of file. Please verify the input configuration.");
 
         var componentId = node.Attributes[ConverterConstants.IdAttr].Value;
         var styleValue = node.Attributes[ConverterConstants.StyleValueAttr]?.Value;
