@@ -8,7 +8,7 @@ public class UserRemovedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "user.removed";
 
-    public UserRemovedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public UserRemovedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

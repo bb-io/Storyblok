@@ -8,7 +8,7 @@ public class StoryMovedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "story.moved";
 
-    public StoryMovedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public StoryMovedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

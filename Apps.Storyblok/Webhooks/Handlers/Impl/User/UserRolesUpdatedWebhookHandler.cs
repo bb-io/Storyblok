@@ -8,7 +8,7 @@ public class UserRolesUpdatedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "user.roles_updated";
 
-    public UserRolesUpdatedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public UserRolesUpdatedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }
