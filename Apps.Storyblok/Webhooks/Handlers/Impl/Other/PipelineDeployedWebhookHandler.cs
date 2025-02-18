@@ -8,7 +8,7 @@ public class PipelineDeployedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "pipeline.deployed";
 
-    public PipelineDeployedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public PipelineDeployedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

@@ -8,7 +8,7 @@ public class WorkflowChangedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "stage.changed";
 
-    public WorkflowChangedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public WorkflowChangedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

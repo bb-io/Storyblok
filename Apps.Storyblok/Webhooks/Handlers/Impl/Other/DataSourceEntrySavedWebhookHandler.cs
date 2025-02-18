@@ -8,7 +8,7 @@ public class DataSourceEntrySavedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "datasource.entries_updated";
 
-    public DataSourceEntrySavedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public DataSourceEntrySavedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

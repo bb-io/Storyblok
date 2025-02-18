@@ -8,7 +8,7 @@ public class StoryPublishedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "story.published";
 
-    public StoryPublishedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public StoryPublishedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

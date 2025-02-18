@@ -8,7 +8,7 @@ public class UserAddedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "user.added";
 
-    public UserAddedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public UserAddedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

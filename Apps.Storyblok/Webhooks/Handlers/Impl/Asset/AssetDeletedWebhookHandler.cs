@@ -8,7 +8,7 @@ public class AssetDeletedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "asset.deleted";
 
-    public AssetDeletedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public AssetDeletedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }
