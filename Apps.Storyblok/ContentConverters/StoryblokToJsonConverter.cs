@@ -49,7 +49,8 @@ public static class StoryblokToJsonConverter
         if (styleValue != null)
             return new(componentId, styleValue);
 
-        return new(componentId, node.InnerText);
+        var htmlContent = HttpUtility.HtmlDecode(node.InnerHtml);
+        return new(componentId, htmlContent);
     }
 
     private static string ConvertTableToJson(HtmlNode node)
@@ -66,7 +67,7 @@ public static class StoryblokToJsonConverter
             var path = x.Attributes[ConverterConstants.ComponentPath].Value;
             var token = table.SelectToken(path)!;
 
-            ((JValue)token).Value = x.InnerText;
+            ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
         });
 
         return table.ToString();
@@ -86,7 +87,7 @@ public static class StoryblokToJsonConverter
             var path = x.Attributes[ConverterConstants.ComponentPath].Value;
             var token = richText.SelectToken(path)!;
 
-            ((JValue)token).Value = x.InnerText;
+            ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
         });
 
         return richText.ToString();
