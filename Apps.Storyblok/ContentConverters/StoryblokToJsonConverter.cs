@@ -93,24 +93,20 @@ public static class StoryblokToJsonConverter
         return richText.ToString();
     }
 
-    //private static string ConvertMarkdownToJson(HtmlNode node)
-    //{
-    //    var tableElements = node.ChildNodes.Where(x => x.Name != "#text").ToList();
-
-    //    var markdown = new StringBuilder();
-    //    tableElements.ForEach(x =>
-    //    {
-    //        var leadingSpaces = int.Parse(x.Attributes[ConverterConstants.LeadingSpacesAttr].Value);
-    //        var trailingSpaces = int.Parse(x.Attributes[ConverterConstants.TrailingSpacesAttr].Value);
-
-    //        markdown.Append($"|{new(' ', leadingSpaces)}{x.InnerHtml}{new(' ', trailingSpaces)}");
-    //    });
-
-    //    return markdown + "|";
-    //}
-
     private static string ConvertMarkdownToJson(HtmlNode node)
     {
-        return HttpUtility.HtmlDecode(node.InnerHtml);
+        var tableElements = node.ChildNodes.Where(x => x.Name != "#text").ToList();
+
+        var markdown = new StringBuilder();
+        tableElements.ForEach(x =>
+        {
+            var leadingSpaces = int.Parse(x.Attributes[ConverterConstants.LeadingSpacesAttr].Value);
+            var trailingSpaces = int.Parse(x.Attributes[ConverterConstants.TrailingSpacesAttr].Value);
+
+            markdown.Append($"|{new(' ', leadingSpaces)}{x.InnerHtml}{new(' ', trailingSpaces)}");
+        });
+
+        return markdown + "|";
     }
+
 }
