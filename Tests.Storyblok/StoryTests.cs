@@ -15,11 +15,11 @@ namespace Tests.Storyblok
 
             var input = new StoryRequest
             {
-                SpaceId= "321599",
-                StoryId = "611744361"
+                SpaceId= "337047",
+                StoryId = "662502925"
             };
 
-            var fileName = "test.html";
+            var fileName = "662502925 (2).html";
 
             var input2 = new ImportRequest
             {
@@ -34,7 +34,7 @@ namespace Tests.Storyblok
 
             Assert.IsNotNull(result, "Result should not be null");
 
-            Assert.AreEqual("611744361", result.Id, "Story ID should match the input ID");
+            Assert.AreEqual("662502925", result.Id, "Story ID should match the input ID");
             Assert.IsTrue(!string.IsNullOrEmpty(result.Name), "Story name should not be empty");
             Assert.IsTrue(result.Published, "Story should be published");
             Assert.IsTrue(result.CreatedAt <= DateTime.UtcNow, "Creation date should not be in the future");
