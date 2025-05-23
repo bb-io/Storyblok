@@ -6,14 +6,16 @@ using Blackbird.Applications.Sdk.Utils.Html.Extensions;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace Apps.Storyblok.ContentConverters;
 
 public static class StoryblokToJsonConverter
 {
-    public static string ToJson(byte[] html, string pageId)
+    public static string ToJson(string html, string pageId)
     {
-        var htmlDoc = Encoding.UTF8.GetString(html).AsHtmlDocument();
+        var htmlDoc = html.AsHtmlDocument();
         var translatableNodes = htmlDoc.DocumentNode.SelectSingleNode("/html/body")
             .ChildNodes
             .Where(x => x.Name != "#text")
@@ -82,13 +84,34 @@ public static class StoryblokToJsonConverter
             .Where(x => x.Attributes.Contains(ConverterConstants.ComponentPath))
             .ToList();
 
-        richTextChildren.ForEach(x =>
+        foreach (var x in richTextChildren)
         {
             var path = x.Attributes[ConverterConstants.ComponentPath].Value;
-            var token = richText.SelectToken(path)!;
+
+            if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("$"))
+            {
+                continue;
+            }
+
+            var hrefMatch = Regex.Match(path, @"content\[\d+\]\.content\[\d+\]\.marks\[\d+\]\.attrs\.href$");
+            if (hrefMatch.Success)
+            {
+                var markPath = path.Substring(0, path.LastIndexOf(".attrs.href"));
+                var markToken = richText.SelectToken(markPath);
+                if (markToken == null || markToken["type"]?.ToString() != "link" || markToken["attrs"]?["href"] == null)
+                {
+                    continue;
+                }
+            }
+
+            var token = richText.SelectToken(path);
+            if (token == null)
+            {
+                continue;
+            }
 
             ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
-        });
+        }
 
         return richText.ToString();
     }
@@ -108,5 +131,4 @@ public static class StoryblokToJsonConverter
 
         return markdown + "|";
     }
-
 }

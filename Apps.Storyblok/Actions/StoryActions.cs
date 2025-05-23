@@ -1,5 +1,4 @@
-﻿using System.Net.Mime;
-using Apps.Storyblok.Api;
+﻿using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
 using Apps.Storyblok.ContentConverters;
 using Apps.Storyblok.Invocables;
@@ -12,12 +11,19 @@ using Apps.Storyblok.Models.Response.Pagination;
 using Apps.Storyblok.Models.Response.Story;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Xliff.Utils.Converters;
+using Blackbird.Xliff.Utils.Serializers.Html;
+using Blackbird.Xliff.Utils.Serializers.Xliff2;
+using Newtonsoft.Json;
 using RestSharp;
+using System.Net.Mime;
+using System.Text;
 
 namespace Apps.Storyblok.Actions;
 
@@ -67,6 +73,9 @@ public class StoryActions : StoryblokInvocable
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content!;
 
+        var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
+        Console.WriteLine(resultJson);
+
         var html = StoryblokToHtmlConverter.ToHtml(contentJson);
         using var stream = new MemoryStream(html);
         var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.StoryId}.html");
@@ -79,14 +88,22 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] ImportRequest import)
     {
         var fileStream = await _fileManagementClient.DownloadAsync(import.Content);
-        var fileBytes = await fileStream.GetByteData();
+        var html = Encoding.UTF8.GetString(await fileStream.GetByteData());
 
-        var json = StoryblokToJsonConverter.ToJson(fileBytes, story.StoryId);
+        if (Xliff2Serializer.IsXliff2(html))
+        {
+            html = HtmlSerializer.Serialize(Xliff2Serializer.Deserialize(html)).FirstOrDefault();
+            if (html == null) throw new PluginMisconfigurationException("XLIFF did not contain any files");
+        }
+
+        var json = StoryblokToJsonConverter.ToJson(html, story.StoryId);
 
         var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .AddJsonBody(new { data = json });
 
+        var resultJson = JsonConvert.SerializeObject(request, Formatting.Indented);
+        Console.WriteLine(resultJson);
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
     }

@@ -356,3 +356,7 @@ healthchecksdb
 *.env
 /ConsoleApp1
 /Tests.Storyblok/appsettings.json
+/Tests.Storyblok/TestFiles/Input/669571308.html
+/Tests.Storyblok/TestFiles/Input/669571308_original.html
+/Tests.Storyblok/TestFiles/Input/670488971.html
+/Tests.Storyblok/TestFiles/Input/test.html
