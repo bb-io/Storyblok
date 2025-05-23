@@ -73,9 +73,6 @@ public class StoryActions : StoryblokInvocable
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content!;
 
-        var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
-        Console.WriteLine(resultJson);
-
         var html = StoryblokToHtmlConverter.ToHtml(contentJson);
         using var stream = new MemoryStream(html);
         var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.StoryId}.html");
@@ -102,8 +99,6 @@ public class StoryActions : StoryblokInvocable
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .AddJsonBody(new { data = json });
 
-        var resultJson = JsonConvert.SerializeObject(request, Formatting.Indented);
-        Console.WriteLine(resultJson);
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
     }
