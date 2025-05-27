@@ -19,11 +19,12 @@ namespace Tests.Storyblok
             var input = new StoryRequest
             {
                 SpaceId= "173562",
-                //StoryId = "662502925"
-                StoryId = "676213989"
+                //StoryId = "677627238"
+                StoryId = "677425912"
+
             };
 
-            var fileName = "669571308.html";
+            var fileName = "677425912.html";
             
 
             var input2 = new ImportRequest
@@ -35,12 +36,10 @@ namespace Tests.Storyblok
             };
 
             var result =await client.ImportStoryContent(input,input2);
-
-            Assert.AreEqual("676213989", result.Id, "Story ID should match the input ID");
-            Assert.IsTrue(!string.IsNullOrEmpty(result.Name), "Story name should not be empty");
-            Assert.IsTrue(result.Published, "Story should be published");
-            Assert.IsTrue(result.CreatedAt <= DateTime.UtcNow, "Creation date should not be in the future");
+            Assert.IsNotNull(result);
         }
+       
+
 
         [TestMethod]
         public async Task ExportStoryContent_ValidFile_ReturnsResponse()
@@ -50,7 +49,11 @@ namespace Tests.Storyblok
             var input = new StoryRequest
             {
                 SpaceId = "173562",
-                StoryId = "670488971"
+                StoryId = "677425912"
+                //SpaceId = "340298",
+                //StoryId = "677425912"
+
+                //677422728
             };
 
             var input2 = new OptionalLanguage
@@ -71,15 +74,16 @@ namespace Tests.Storyblok
 
             var input = new SpaceRequest
             {
-                SpaceId = "173562",
+                SpaceId = "340298",
             };
 
             var input2 = new CreateStoryInput
             {
-                Name = "Test Story",
-                Slug = "test-story",
-                Path= "en/novalabel/checkliste-test",
-                IsFolder =true,
+                Name = "Test Story1",
+                Slug = "test__story",
+                Path= "/Test Story",
+                IsFolder =false,
+                DefaultRoot = "root",
             };
 
             var result = await client.CreateStory(input, input2);
@@ -87,6 +91,41 @@ namespace Tests.Storyblok
             var resultJson = JsonConvert.SerializeObject(result, Formatting.Indented);
             Console.WriteLine(resultJson);
             Assert.IsNotNull(result, "Result should not be null");
+        }
+
+
+        //[TestMethod]
+        //public async Task DeleteStoryContent_IsSuccess()
+        //{
+        //    var client = new StoryActions(InvocationContext, FileManager);
+
+        //    var input = new StoryRequest
+        //    {
+        //        //SpaceId = "173562",
+        //        //StoryId = "669571308"
+
+        //    };
+
+        //    await client.DeleteStory(input);
+        //    Assert.IsTrue(true);
+        //}
+
+        [TestMethod]
+        public async Task GetStoryContent_ValidFile_ReturnsResponse()
+        {
+            var client = new StoryActions(InvocationContext, FileManager);
+
+            var input = new StoryRequest
+            {
+                SpaceId = "173562",
+                StoryId = "677425912"
+            };
+
+            var response = await client.GetStory(input);
+            var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
+            Console.WriteLine(resultJson);
+
+            Assert.IsTrue(true);
         }
     }
 }

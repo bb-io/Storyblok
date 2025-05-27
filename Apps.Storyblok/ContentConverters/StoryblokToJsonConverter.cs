@@ -6,8 +6,8 @@ using Blackbird.Applications.Sdk.Utils.Html.Extensions;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
 
 namespace Apps.Storyblok.ContentConverters;
 
@@ -16,7 +16,15 @@ public static class StoryblokToJsonConverter
     public static string ToJson(string html, string pageId)
     {
         var htmlDoc = html.AsHtmlDocument();
-        var translatableNodes = htmlDoc.DocumentNode.SelectSingleNode("/html/body")
+        var bodyNode = htmlDoc.DocumentNode.SelectSingleNode("/html/body");
+        if (bodyNode == null)
+            throw new PluginMisconfigurationException("HTML document must contain a <body> element.");
+
+        var textNodesDiv = bodyNode.SelectSingleNode("//div[@id='text_nodes']");
+        if (textNodesDiv != null)
+            textNodesDiv.Remove();
+
+        var translatableNodes = bodyNode
             .ChildNodes
             .Where(x => x.Name != "#text")
             .ToArray();
@@ -25,6 +33,7 @@ public static class StoryblokToJsonConverter
             .ToDictionary(x => x.Key, x => x.Value);
 
         dictionaryData[ConverterConstants.PageIdNode] = pageId;
+
         return JsonConvert.SerializeObject(dictionaryData);
     }
 
@@ -89,9 +98,7 @@ public static class StoryblokToJsonConverter
             var path = x.Attributes[ConverterConstants.ComponentPath].Value;
 
             if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("$"))
-            {
                 continue;
-            }
 
             var hrefMatch = Regex.Match(path, @"content\[\d+\]\.content\[\d+\]\.marks\[\d+\]\.attrs\.href$");
             if (hrefMatch.Success)
@@ -99,16 +106,12 @@ public static class StoryblokToJsonConverter
                 var markPath = path.Substring(0, path.LastIndexOf(".attrs.href"));
                 var markToken = richText.SelectToken(markPath);
                 if (markToken == null || markToken["type"]?.ToString() != "link" || markToken["attrs"]?["href"] == null)
-                {
                     continue;
-                }
             }
 
             var token = richText.SelectToken(path);
             if (token == null)
-            {
                 continue;
-            }
 
             ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
         }
@@ -118,17 +121,63 @@ public static class StoryblokToJsonConverter
 
     private static string ConvertMarkdownToJson(HtmlNode node)
     {
-        var tableElements = node.ChildNodes.Where(x => x.Name != "#text").ToList();
-
         var markdown = new StringBuilder();
-        tableElements.ForEach(x =>
+
+        var thead = node.SelectSingleNode("thead");
+        var tbody = node.SelectSingleNode("tbody");
+
+        if (thead == null || tbody == null)
+            throw new PluginMisconfigurationException("Table must contain both <thead> and <tbody> elements.");
+
+        var headerRow = thead.SelectSingleNode("tr");
+        if (headerRow == null)
+            throw new PluginMisconfigurationException("Table <thead> must contain a <tr> element.");
+
+        var headers = headerRow.SelectNodes("th")?.Select(th => HttpUtility.HtmlDecode(th.InnerText.Trim())).ToList();
+        if (headers == null || !headers.Any())
+            throw new PluginMisconfigurationException("Table <thead> must contain at least one <th> element.");
+
+        var rows = tbody.SelectNodes("tr")?.Select(tr =>
+            tr.SelectNodes("td")?.Select(td => HttpUtility.HtmlDecode(td.InnerText.Trim())).ToList()
+        ).ToList() ?? new List<List<string>>();
+
+        var columnWidths = new int[headers.Count];
+        for (int i = 0; i < headers.Count; i++)
         {
-            var leadingSpaces = int.Parse(x.Attributes[ConverterConstants.LeadingSpacesAttr].Value);
-            var trailingSpaces = int.Parse(x.Attributes[ConverterConstants.TrailingSpacesAttr].Value);
+            columnWidths[i] = headers[i].Length;
+            foreach (var row in rows)
+            {
+                if (row != null && i < row.Count)
+                    columnWidths[i] = Math.Max(columnWidths[i], row[i].Length);
+            }
+        }
 
-            markdown.Append($"|{new(' ', leadingSpaces)}{x.InnerHtml}{new(' ', trailingSpaces)}");
-        });
+        markdown.Append("|");
+        for (int i = 0; i < headers.Count; i++)
+        {
+            markdown.Append($" {headers[i].PadRight(columnWidths[i])} |");
+        }
+        markdown.AppendLine();
 
-        return markdown + "|";
+        markdown.Append("|");
+        for (int i = 0; i < headers.Count; i++)
+        {
+            markdown.Append($" {new string('-', columnWidths[i])} |");
+        }
+        markdown.AppendLine();
+
+        foreach (var row in rows)
+        {
+            if (row == null) continue;
+            markdown.Append("|");
+            for (int i = 0; i < headers.Count; i++)
+            {
+                var cell = i < row.Count ? row[i] : "";
+                markdown.Append($" {cell.PadRight(columnWidths[i])} |");
+            }
+            markdown.AppendLine();
+        }
+
+        return markdown.ToString();
     }
 }
