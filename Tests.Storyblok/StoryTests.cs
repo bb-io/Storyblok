@@ -19,7 +19,6 @@ namespace Tests.Storyblok
             var input = new StoryRequest
             {
                 SpaceId= "173562",
-                //StoryId = "677627238"
                 StoryId = "677425912"
 
             };
@@ -50,10 +49,7 @@ namespace Tests.Storyblok
             {
                 SpaceId = "173562",
                 StoryId = "677425912"
-                //SpaceId = "340298",
-                //StoryId = "677425912"
 
-                //677422728
             };
 
             var input2 = new OptionalLanguage
@@ -79,11 +75,6 @@ namespace Tests.Storyblok
 
             var input2 = new CreateStoryInput
             {
-                Name = "Test Story1",
-                Slug = "test__story",
-                Path= "/Test Story",
-                IsFolder =false,
-                DefaultRoot = "root",
             };
 
             var result = await client.CreateStory(input, input2);
