@@ -13,7 +13,7 @@ namespace Apps.Storyblok.ContentConverters;
 
 public static class StoryblokToJsonConverter
 {
-    public static string ToJson(string html, string pageId)
+    public static string ToJson(string html, string pageId, string originalUUID = null)
     {
         var htmlDoc = html.AsHtmlDocument();
         var bodyNode = htmlDoc.DocumentNode.SelectSingleNode("/html/body");
@@ -29,7 +29,7 @@ public static class StoryblokToJsonConverter
             .Where(x => x.Name != "#text")
             .ToArray();
 
-        var dictionaryData = translatableNodes.Select(MapComponentToHtmlTag)
+        var dictionaryData = translatableNodes.Select(node => MapComponentToHtmlTag(node, originalUUID))
             .ToDictionary(x => x.Key, x => x.Value);
 
         dictionaryData[ConverterConstants.PageIdNode] = pageId;
@@ -37,7 +37,7 @@ public static class StoryblokToJsonConverter
         return JsonConvert.SerializeObject(dictionaryData);
     }
 
-    private static KeyValuePair<string, string> MapComponentToHtmlTag(HtmlNode node)
+    private static KeyValuePair<string, string> MapComponentToHtmlTag(HtmlNode node, string originalUUID)
     {
         if (node == null)
             throw new PluginMisconfigurationException("HtmlNode is null. Please check the input and ensure it is configured correctly.");
@@ -47,6 +47,12 @@ public static class StoryblokToJsonConverter
 
         var componentId = node.Attributes[ConverterConstants.IdAttr].Value;
         var styleValue = node.Attributes[ConverterConstants.StyleValueAttr]?.Value;
+
+        if (!string.IsNullOrEmpty(originalUUID) && componentId.Contains(":articlePage:"))
+        {
+            var uuidPattern = @"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+            componentId = Regex.Replace(componentId, uuidPattern, originalUUID);
+        }
 
         if (node.Attributes[ConverterConstants.OriginalTableAttr] is not null)
             return new(componentId, ConvertTableToJson(node));
@@ -60,8 +66,15 @@ public static class StoryblokToJsonConverter
         if (styleValue != null)
             return new(componentId, styleValue);
 
-        var htmlContent = HttpUtility.HtmlDecode(node.InnerHtml);
-        return new(componentId, htmlContent);
+        var translatableFields = new[] { "keywords", "leadText", "metaTitle", "pageTitle", "metaDescription", "title", "articleTitle", "articleDescription", "imageAltTag", "text" };
+        if (translatableFields.Any(field => componentId.EndsWith($":{field}")))
+        {
+            var htmlContent = HttpUtility.HtmlDecode(node.InnerHtml);
+            return new(componentId, htmlContent);
+        }
+
+        var htmlContentDefault = HttpUtility.HtmlDecode(node.InnerHtml);
+        return new(componentId, htmlContentDefault);
     }
 
     private static string ConvertTableToJson(HtmlNode node)
@@ -76,9 +89,21 @@ public static class StoryblokToJsonConverter
         tableChildren.ForEach(x =>
         {
             var path = x.Attributes[ConverterConstants.ComponentPath].Value;
-            var token = table.SelectToken(path)!;
+            var token = table.SelectToken(path);
+            if (token == null)
+                return;
 
             ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
+
+            if (path.EndsWith(".text"))
+            {
+                var parentPath = path.Substring(0, path.LastIndexOf(".text"));
+                var parentToken = table.SelectToken(parentPath);
+                if (parentToken != null)
+                {
+                    parentToken["text"] = HttpUtility.HtmlDecode(x.InnerHtml);
+                }
+            }
         });
 
         return table.ToString();
@@ -97,23 +122,46 @@ public static class StoryblokToJsonConverter
         {
             var path = x.Attributes[ConverterConstants.ComponentPath].Value;
 
-            if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("$"))
+            if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("content"))
                 continue;
-
-            var hrefMatch = Regex.Match(path, @"content\[\d+\]\.content\[\d+\]\.marks\[\d+\]\.attrs\.href$");
-            if (hrefMatch.Success)
-            {
-                var markPath = path.Substring(0, path.LastIndexOf(".attrs.href"));
-                var markToken = richText.SelectToken(markPath);
-                if (markToken == null || markToken["type"]?.ToString() != "link" || markToken["attrs"]?["href"] == null)
-                    continue;
-            }
 
             var token = richText.SelectToken(path);
             if (token == null)
                 continue;
 
-            ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
+            if (path.EndsWith(".text"))
+            {
+                var translatedText = HttpUtility.HtmlDecode(x.InnerHtml);
+                ((JValue)token).Value = translatedText;
+
+                var parentPath = path.Substring(0, path.LastIndexOf(".text"));
+                var parentToken = richText.SelectToken(parentPath);
+                if (parentToken != null)
+                {
+                    parentToken["text"] = translatedText;
+                }
+
+                var contentPath = path.Substring(0, path.LastIndexOf(".content"));
+                var contentToken = richText.SelectToken(contentPath);
+                if (contentToken != null && contentToken["content"] != null)
+                {
+                    var contentArray = contentToken["content"] as JArray;
+                    var index = int.Parse(path.Split('[')[1].Split(']')[0]);
+                    if (contentArray != null && index < contentArray.Count)
+                    {
+                        var contentItem = contentArray[index];
+                        if (contentItem["content"] != null)
+                        {
+                            var innerContentArray = contentItem["content"] as JArray;
+                            var innerIndex = int.Parse(path.Split('[')[2].Split(']')[0]);
+                            if (innerContentArray != null && innerIndex < innerContentArray.Count)
+                            {
+                                innerContentArray[innerIndex]["text"] = translatedText;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         return richText.ToString();
