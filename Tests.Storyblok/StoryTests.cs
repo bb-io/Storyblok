@@ -19,11 +19,11 @@ namespace Tests.Storyblok
             var input = new StoryRequest
             {
                 SpaceId= "173562",
-                StoryId = "677425912"
+                StoryId = "677627238"
 
             };
 
-            var fileName = "677425912.html";
+            var fileName = "677627238.html";
             
 
             var input2 = new ImportRequest
@@ -48,7 +48,7 @@ namespace Tests.Storyblok
             var input = new StoryRequest
             {
                 SpaceId = "173562",
-                StoryId = "677425912"
+                StoryId = "677627238"
 
             };
 
