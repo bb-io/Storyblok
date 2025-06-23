@@ -1,17 +1,23 @@
 using Apps.Storyblok.Constants;
+using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Asset;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Other;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Story;
 using Apps.Storyblok.Webhooks.Handlers.Impl.User;
 using Apps.Storyblok.Webhooks.Models.Payloads;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Newtonsoft.Json;
 
 namespace Apps.Storyblok.Webhooks.Lists;
 
 [WebhookList]
-public class WebhookList
+public class WebhookList: StoryblokInvocable
 {
+    public WebhookList(InvocationContext invocationContext) : base(invocationContext)
+    {
+    }
+
     [Webhook("On story published", typeof(StoryPublishedWebhookHandler),
         Description = "On a specific story published")]
     public Task<WebhookResponse<StoryWebhookPayload>> OnStoryPublished(WebhookRequest webhookRequest)
@@ -89,17 +95,26 @@ public class WebhookList
 
     private Task<WebhookResponse<T>> HandleWebhook<T>(WebhookRequest request) where T : class
     {
-        var payload = request.Body.ToString();
-        ArgumentException.ThrowIfNullOrEmpty(payload);
-
-        var data = JsonConvert.DeserializeObject<T>(payload, JsonConfig.Settings);
-
-        if (data is null)
-            throw new InvalidOperationException();
-
-        return Task.FromResult(new WebhookResponse<T>()
+        try
         {
-            Result = data
-        });
+            var payload = request.Body.ToString();
+            ArgumentException.ThrowIfNullOrEmpty(payload);
+
+            var data = JsonConvert.DeserializeObject<T>(payload, JsonConfig.Settings);
+
+            if (data is null)
+                throw new InvalidOperationException();
+
+            return Task.FromResult(new WebhookResponse<T>()
+            {
+                Result = data
+            });
+        }
+        catch (Exception ex)
+        {
+            InvocationContext.Logger?.LogError(
+                $"[StoryblokWebhookEvent] Failed to handle webhook {ex.Message}.", [request.Body]);
+            throw;
+        }
     }
 }
