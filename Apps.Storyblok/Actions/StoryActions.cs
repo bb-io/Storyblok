@@ -17,10 +17,8 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Xliff.Utils.Converters;
-using Blackbird.Xliff.Utils.Serializers.Html;
-using Blackbird.Xliff.Utils.Serializers.Xliff2;
-using Newtonsoft.Json;
+using Blackbird.Filters.Transformations;
+using Blackbird.Filters.Xliff.Xliff2;
 using RestSharp;
 using System.Net.Mime;
 using System.Text;
@@ -89,7 +87,7 @@ public class StoryActions : StoryblokInvocable
 
         if (Xliff2Serializer.IsXliff2(html))
         {
-            html = HtmlSerializer.Serialize(Xliff2Serializer.Deserialize(html)).FirstOrDefault();
+            html = Transformation.Parse(html, import.Content.Name).Target().Serialize();
             if (html == null) throw new PluginMisconfigurationException("XLIFF did not contain any files");
         }
 
