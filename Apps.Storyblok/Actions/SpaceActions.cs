@@ -19,7 +19,7 @@ public class SpaceActions : StoryblokInvocable
     {
     }
 
-    [Action("List spaces", Description = "List all spaces in your space")]
+    [Action("Search spaces", Description = "Search all spaces in your space")]
     public Task<ListSpacesResponse> ListSpaces()
     {
         var request = new StoryblokRequest("/v1/spaces", Method.Get, Creds);

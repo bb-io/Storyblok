@@ -20,7 +20,7 @@ public class ReleaseActions : StoryblokInvocable
     {
     }
 
-    [Action("List releases", Description = "List all releases in your space")]
+    [Action("Search releases", Description = "Search all releases in your space")]
     public Task<ListReleasesResponse> ListReleases(
         [ActionParameter] SpaceRequest space)
     {

@@ -20,7 +20,7 @@ public class ComponentActions : StoryblokInvocable
     {
     }
     
-    [Action("List components", Description = "List all components in your space")]
+    [Action("Search components", Description = "List all components in your space")]
     public Task<ListComponentsResponse> ListComponents(
         [ActionParameter] SpaceRequest space)
     {

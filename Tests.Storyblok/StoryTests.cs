@@ -109,10 +109,47 @@ namespace Tests.Storyblok
             var input = new StoryRequest
             {
                 SpaceId = "173562",
-                StoryId = "677425912"
+                StoryId = "90202101418479"
             };
 
             var response = await client.GetStory(input);
+            var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
+            Console.WriteLine(resultJson);
+
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public async Task AddStoryTags_ValidFile_ReturnsResponse()
+        {
+            var client = new StoryActions(InvocationContext, FileManager);
+
+            var input = new StoryRequest
+            {
+                SpaceId = "173562",
+                //StoryId = "76279249056122"
+                StoryId = "90202101418479"
+            };
+
+            var response = await client.AddTagsToStory(input, new AddTagsToStoryRequest { Tags = ["Test KK v2"] });
+            var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
+            Console.WriteLine(resultJson);
+
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public async Task RemoveTagFromStory_ReturnsResponse()
+        {
+            var client = new StoryActions(InvocationContext, FileManager);
+
+            var input = new StoryRequest
+            {
+                SpaceId = "173562",
+                StoryId = "76279249056122"
+            };
+
+            var response = await client.RemoveTagFromStory(input, "Test 4");
             var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
             Console.WriteLine(resultJson);
 

@@ -1,3 +1,4 @@
+using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Asset;
@@ -5,9 +6,11 @@ using Apps.Storyblok.Webhooks.Handlers.Impl.Other;
 using Apps.Storyblok.Webhooks.Handlers.Impl.Story;
 using Apps.Storyblok.Webhooks.Handlers.Impl.User;
 using Apps.Storyblok.Webhooks.Models.Payloads;
+using Apps.Storyblok.Webhooks.Models.Request;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Newtonsoft.Json;
+using RestSharp;
 
 namespace Apps.Storyblok.Webhooks.Lists;
 
@@ -20,23 +23,27 @@ public class WebhookList: StoryblokInvocable
 
     [Webhook("On story published", typeof(StoryPublishedWebhookHandler),
         Description = "On a specific story published")]
-    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryPublished(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryPublished(WebhookRequest webhookRequest,
+        [WebhookParameter] WebhookTagsFilter? filter = null)
+        => HandleStoryWebhookWithTagsAny(webhookRequest, filter);
 
     [Webhook("On story unpublished", typeof(StoryUnpublishedWebhookHandler),
         Description = "On a specific story unpublished")]
-    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryUnpublished(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryUnpublished(WebhookRequest webhookRequest,
+        [WebhookParameter] WebhookTagsFilter? filter = null)
+        => HandleStoryWebhookWithTagsAny(webhookRequest, filter);
 
     [Webhook("On story moved", typeof(StoryMovedWebhookHandler),
         Description = "On a specific story moved")]
-    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryMoved(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryMoved(WebhookRequest webhookRequest,
+        [WebhookParameter] WebhookTagsFilter? filter = null)
+        => HandleStoryWebhookWithTagsAny(webhookRequest, filter);
 
     [Webhook("On story deleted", typeof(StoryDeletedWebhookHandler),
         Description = "On a specific story deleted")]
-    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryDeleted(WebhookRequest webhookRequest)
-        => HandleWebhook<StoryWebhookPayload>(webhookRequest);
+    public Task<WebhookResponse<StoryWebhookPayload>> OnStoryDeleted(WebhookRequest webhookRequest,
+        [WebhookParameter] WebhookTagsFilter? filter = null)
+        => HandleStoryWebhookWithTagsAny(webhookRequest, filter);
 
     [Webhook("On asset created", typeof(AssetCreatedWebhookHandler),
         Description = "On a new asset created")]
@@ -115,6 +122,62 @@ public class WebhookList: StoryblokInvocable
             InvocationContext.Logger?.LogError(
                 $"[StoryblokWebhookEvent] Failed to handle webhook {ex.Message}.", [request.Body]);
             throw;
+        }
+    }
+
+    private async Task<WebhookResponse<StoryWebhookPayload>> HandleStoryWebhookWithTagsAny(WebhookRequest request,WebhookTagsFilter? filter)
+    {
+        try
+        {
+            var payloadStr = request.Body.ToString();
+            ArgumentException.ThrowIfNullOrEmpty(payloadStr);
+
+            var data = JsonConvert.DeserializeObject<StoryWebhookPayload>(payloadStr, JsonConfig.Settings)
+                       ?? throw new InvalidOperationException("Empty payload");
+
+            var wanted = filter?.Tags?
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (wanted == null || wanted.Length == 0)
+                return new WebhookResponse<StoryWebhookPayload> { Result = data };
+
+            var story = await FetchStory(data.SpaceId, data.StoryId);
+            if (story?.TagList == null || !story.TagList.Any())
+                throw new InvalidOperationException("Filtered out (story not found or no tags).");
+
+            var storyTags = story.TagList
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var any = wanted.Any(storyTags.Contains);
+            if (!any)
+                throw new InvalidOperationException("Filtered out by tags (ANY).");
+
+            return new WebhookResponse<StoryWebhookPayload> { Result = data };
+        }
+        catch (Exception ex)
+        {
+            InvocationContext.Logger?.LogError($"[StoryblokWebhookEvent] Tag filter blocked event: {ex.Message} - {request.Body}", null);
+            throw;
+        }
+    }
+
+    private async Task<Apps.Storyblok.Models.Entities.StoryEntity?> FetchStory(string spaceId, string storyId)
+    {
+        try
+        {
+            var endpoint = $"/v1/spaces/{spaceId}/stories/{storyId}";
+            var req = new StoryblokRequest(endpoint, Method.Get, Creds);
+            var resp = await Client.ExecuteWithErrorHandling<Apps.Storyblok.Models.Response.Story.StoryResponse>(req);
+            return resp.Story;
+        }
+        catch
+        {
+            return null;
         }
     }
 }
