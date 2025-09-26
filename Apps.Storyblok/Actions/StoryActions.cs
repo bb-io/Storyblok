@@ -41,10 +41,20 @@ public class StoryActions : StoryblokInvocable
     [Action("Search stories", Description = "Search all stories in your space")]
     public async Task<ListStoriesResponse> ListStories(
         [ActionParameter] SpaceRequest space,
-        [ActionParameter] ListStoriesRequest query)
+        [ActionParameter] ListStoriesRequest query,
+        [ActionParameter] ListStoriesTagsInput tagsInput)
     {
         var endpoint = $"/v1/spaces/{space.SpaceId}/stories".WithQuery(query);
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
+
+        var tags = tagsInput?.Tags?
+       .Where(t => !string.IsNullOrWhiteSpace(t))
+       .Select(t => t.Trim())
+       .Distinct(StringComparer.OrdinalIgnoreCase)
+       .ToArray();
+
+        if (tags is { Length: > 0 })
+            request.AddQueryParameter("with_tag", string.Join(",", tags));
 
         var items = await Client.Paginate<StoriesPaginationResponse, StoryEntity>(request);
         return new(items);

@@ -33,22 +33,6 @@ public class ListStoriesRequest
     [JsonProperty("by_uuids")]
     public string? ByUuids { get; set; }
 
-    [Display("Tags", Description = "One or more tags. Matches stories that have ANY of these tags (OR).")]
-    [JsonIgnore]
-    public IEnumerable<string>? Tags { get; set; }
-
-    [JsonProperty("with_tag")]
-    [DefinitionIgnore]
-    public string? WithTag =>
-        Tags == null
-            ? null
-            : string.Join(",", 
-                Tags
-                    .Where(t => !string.IsNullOrWhiteSpace(t))
-                    .Select(t => t.Trim())
-                    .Distinct()
-            );
-
     [Display("Folders only")]
     [JsonProperty("folder_only")]
     public bool? FolderOnly { get; set; }
