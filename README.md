@@ -23,28 +23,28 @@ Storyblok is a headless content management. This Storyblok application primarily
  
 ### Components
 
-- **List/Get/Create/Delete components**
+- **Search/Get/Create/Delete components**
 
 ### Releases
 
-- **List/Get/Create/Delete release**
+- **Search/Get/Create/Delete release**
 
 ### Spaces
 
-- **List/Get/Create/Delete/Backup spaces**
+- **Search/Get/Create/Delete/Backup spaces**
 
 ### Stories
 
 - **Export story content** returns story content as an HTML file.
 - **Import story content** updates story content from an HTML file.
-- **List/Get/Create/Update/Delete stories**
+- **Search/Get/Create/Update/Delete stories**
 - **Publish/Unpublish story**
 - **Get story as HTML for translation** gets story as an HTML file for field level localization.
 - **Translate story from HTML file** updates story from an HTML file using field level localization.
 
 ### Tasks
 
-- **List/Get/Create/Delete tasks**
+- **Search/Get/Create/Delete tasks**
 
 ## Events
 

@@ -21,7 +21,7 @@ public class TaskActions : StoryblokInvocable
     {
     }
 
-    [Action("List tasks", Description = "List all tasks in your space")]
+    [Action("Search tasks", Description = "List all tasks in your space")]
     public async Task<ListTasksResponse> ListTasks(
         [ActionParameter] SpaceRequest space)
     {

@@ -33,10 +33,6 @@ public class ListStoriesRequest
     [JsonProperty("by_uuids")]
     public string? ByUuids { get; set; }
 
-    [Display("Tag")]
-    [JsonProperty("with_tag")]
-    public string? WithTag { get; set; }
-
     [Display("Folders only")]
     [JsonProperty("folder_only")]
     public bool? FolderOnly { get; set; }

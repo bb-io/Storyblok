@@ -1,6 +1,7 @@
 ﻿using Apps.Storyblok.Api;
 using Apps.Storyblok.Constants;
 using Apps.Storyblok.ContentConverters;
+using Apps.Storyblok.DataSourceHandlers;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request;
@@ -11,6 +12,7 @@ using Apps.Storyblok.Models.Response.Pagination;
 using Apps.Storyblok.Models.Response.Story;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
@@ -36,13 +38,23 @@ public class StoryActions : StoryblokInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("List stories", Description = "List all stories in your space")]
+    [Action("Search stories", Description = "Search all stories in your space")]
     public async Task<ListStoriesResponse> ListStories(
         [ActionParameter] SpaceRequest space,
-        [ActionParameter] ListStoriesRequest query)
+        [ActionParameter] ListStoriesRequest query,
+        [ActionParameter] ListStoriesTagsInput tagsInput)
     {
         var endpoint = $"/v1/spaces/{space.SpaceId}/stories".WithQuery(query);
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
+
+        var tags = tagsInput?.Tags?
+       .Where(t => !string.IsNullOrWhiteSpace(t))
+       .Select(t => t.Trim())
+       .Distinct(StringComparer.OrdinalIgnoreCase)
+       .ToArray();
+
+        if (tags is { Length: > 0 })
+            request.AddQueryParameter("with_tag", string.Join(",", tags));
 
         var items = await Client.Paginate<StoriesPaginationResponse, StoryEntity>(request);
         return new(items);
@@ -152,5 +164,109 @@ public class StoryActions : StoryblokInvocable
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
+    }
+
+    [Action("Add tags to story", Description = "Add one or more tags to a specific story")]
+    public async Task<StoryEntity> AddTagsToStory(
+      [ActionParameter] StoryRequest story,
+      [ActionParameter] AddTagsToStoryRequest input)
+    {
+        var newTags = input.Tags?
+           .Where(t => !string.IsNullOrWhiteSpace(t))
+           .Select(t => t.Trim())
+           .Distinct(StringComparer.OrdinalIgnoreCase)
+           .ToArray();
+
+        if (newTags == null || newTags.Length == 0)
+            throw new PluginMisconfigurationException("Provide at least one non-empty tag.");
+
+        if (!long.TryParse(story.StoryId, out var storyId))
+            throw new PluginMisconfigurationException("Story ID must be a numeric.");
+
+
+        var current = await GetStory(story);
+        var currentTags = (current.TagList ?? Enumerable.Empty<string>())
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => t.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var toAdd = newTags
+           .Except(currentTags, StringComparer.OrdinalIgnoreCase)
+           .ToArray();
+
+        if (toAdd.Length == 0)
+        {
+            return current;
+        }
+
+        var mergedTags = currentTags
+        .Union(newTags, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+        var endpoint = $"/v1/spaces/{story.SpaceId}/tags/bulk_association";
+        var payload = new
+        {
+            tags = new
+            {
+                stories = new[]
+                {
+                    new { story_id = storyId, tag_list = mergedTags  }
+                }
+            }
+        };
+
+        var request = new StoryblokRequest(endpoint, Method.Post, Creds).AddJsonBody(payload);
+        await Client.ExecuteWithErrorHandling(request);
+        Task.Delay(1000);
+
+        var refreshed = await GetStory(story);
+        return refreshed;
+    }
+
+    [Action("Remove tag from story", Description = "Remove a single tag from a specific story")]
+    public async Task<StoryEntity> RemoveTagFromStory(
+    [ActionParameter] StoryRequest story,
+    [ActionParameter, Display("Tag")][DataSource(typeof(TagsDataHandler))] string tag)
+    {
+        var tagToRemove = (tag ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(tagToRemove))
+            throw new PluginMisconfigurationException("Tag must be provided.");
+
+        if (!long.TryParse(story.StoryId, out var storyId))
+            throw new PluginMisconfigurationException("Story ID must be numeric.");
+
+        var current = await GetStory(story);
+        var currentTags = (current.TagList ?? Enumerable.Empty<string>())
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .Select(t => t.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (!currentTags.Contains(tagToRemove, StringComparer.OrdinalIgnoreCase))
+            return current;
+
+        var remainingTags = currentTags
+            .Where(t => !string.Equals(t, tagToRemove, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        var endpoint = $"/v1/spaces/{story.SpaceId}/tags/bulk_association";
+        var payload = new
+        {
+            tags = new
+            {
+                stories = new[]
+                {
+                new { story_id = storyId, tag_list = remainingTags }
+            }
+            }
+        };
+
+        var request = new StoryblokRequest(endpoint, Method.Post, Creds).AddJsonBody(payload);
+        await Client.ExecuteWithErrorHandling(request);
+
+        await Task.Delay(1000);
+
+        return await GetStory(story);
     }
 }
