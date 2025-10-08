@@ -28,7 +28,7 @@ using System.Text;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
+[ActionList("Stories")]
 public class StoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : StoryblokInvocable(invocationContext)
 {
     [BlueprintActionDefinition(BlueprintAction.SearchContent)]

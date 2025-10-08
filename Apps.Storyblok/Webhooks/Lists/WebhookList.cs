@@ -15,7 +15,7 @@ using RestSharp;
 
 namespace Apps.Storyblok.Webhooks.Lists;
 
-[WebhookList]
+[WebhookList("Webhooks")]
 public class WebhookList(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
     [BlueprintEventDefinition(BlueprintEvent.ContentCreatedOrUpdated)]

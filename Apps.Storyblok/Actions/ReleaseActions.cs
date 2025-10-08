@@ -13,7 +13,7 @@ using RestSharp;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
+[ActionList("Releases")]
 public class ReleaseActions(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
     [Action("Search releases", Description = "Search all releases in your space")]

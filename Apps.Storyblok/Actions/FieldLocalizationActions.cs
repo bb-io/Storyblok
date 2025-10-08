@@ -25,7 +25,7 @@ using Newtonsoft.Json.Serialization;
 using Blackbird.Applications.Sdk.Utils.RichTextConverter;
 
 namespace Apps.Storyblok.Actions;
-[ActionList]
+[ActionList("Field localization")]
 public class FieldLocalizationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
     : StoryblokInvocable(invocationContext)
 {

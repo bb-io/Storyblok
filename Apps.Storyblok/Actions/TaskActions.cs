@@ -14,7 +14,7 @@ using RestSharp;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
+[ActionList("Tasks")]
 public class TaskActions(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
     [Action("Search tasks", Description = "List all tasks in your space")]
