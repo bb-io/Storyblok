@@ -14,12 +14,8 @@ using RestSharp;
 namespace Apps.Storyblok.Actions;
 
 [ActionList]
-public class ReleaseActions : StoryblokInvocable
+public class ReleaseActions(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
-    public ReleaseActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     [Action("Search releases", Description = "Search all releases in your space")]
     public Task<ListReleasesResponse> ListReleases(
         [ActionParameter] SpaceRequest space)

@@ -45,7 +45,7 @@ namespace Tests.Storyblok
         [TestMethod]
         public async Task TagsDataHandler_ReturnsValues()
         {
-            var handler = new TagsDataHandler(InvocationContext, new StoryRequest { SpaceId= "173562", StoryId= "76279249056122" });
+            var handler = new TagsDataHandler(InvocationContext, new StoryRequest { SpaceId= "173562", ContentId= "76279249056122" });
             var context = new DataSourceContext
             {
             };
