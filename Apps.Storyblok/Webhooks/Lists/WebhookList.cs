@@ -9,18 +9,16 @@ using Apps.Storyblok.Webhooks.Models.Payloads;
 using Apps.Storyblok.Webhooks.Models.Request;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
+using Blackbird.Applications.SDK.Blueprints;
 using Newtonsoft.Json;
 using RestSharp;
 
 namespace Apps.Storyblok.Webhooks.Lists;
 
-[WebhookList]
-public class WebhookList: StoryblokInvocable
+[WebhookList("Webhooks")]
+public class WebhookList(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
-    public WebhookList(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
+    [BlueprintEventDefinition(BlueprintEvent.ContentCreatedOrUpdated)]
     [Webhook("On story published", typeof(StoryPublishedWebhookHandler),
         Description = "On a specific story published")]
     public Task<WebhookResponse<StoryWebhookPayload>> OnStoryPublished(WebhookRequest webhookRequest,
@@ -125,7 +123,7 @@ public class WebhookList: StoryblokInvocable
         }
     }
 
-    private async Task<WebhookResponse<StoryWebhookPayload>> HandleStoryWebhookWithTagsAny(WebhookRequest request,WebhookTagsFilter? filter)
+    private async Task<WebhookResponse<StoryWebhookPayload>> HandleStoryWebhookWithTagsAny(WebhookRequest request, WebhookTagsFilter? filter)
     {
         try
         {
@@ -144,7 +142,7 @@ public class WebhookList: StoryblokInvocable
             if (wanted == null || wanted.Length == 0)
                 return new WebhookResponse<StoryWebhookPayload> { Result = data };
 
-            var story = await FetchStory(data.SpaceId, data.StoryId);
+            var story = await FetchStory(data.SpaceId, data.ContentId);
             if (story?.TagList == null || !story.TagList.Any())
                 throw new InvalidOperationException("Filtered out (story not found or no tags).");
 
@@ -166,7 +164,7 @@ public class WebhookList: StoryblokInvocable
         }
     }
 
-    private async Task<Apps.Storyblok.Models.Entities.StoryEntity?> FetchStory(string spaceId, string storyId)
+    private async Task<Storyblok.Models.Entities.StoryEntity?> FetchStory(string spaceId, string storyId)
     {
         try
         {

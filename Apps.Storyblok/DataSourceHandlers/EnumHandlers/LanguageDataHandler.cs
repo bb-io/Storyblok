@@ -1,10 +1,16 @@
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Storyblok.DataSourceHandlers.EnumHandlers;
 
-public class LanguageDataHandler : IStaticDataSourceHandler
+public class LanguageDataHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData() => new()
+    public IEnumerable<DataSourceItem> GetData()
+    {
+        return Locales.Select(kvp => new DataSourceItem(kvp.Key, kvp.Value));
+    }
+
+    private Dictionary<string, string> Locales => new()
     {
         { "af", "Afrikaans" },
         { "sq", "Albanian" },

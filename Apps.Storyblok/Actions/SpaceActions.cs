@@ -12,13 +12,9 @@ using RestSharp;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
-public class SpaceActions : StoryblokInvocable
+[ActionList("Spaces")]
+public class SpaceActions(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
-    public SpaceActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     [Action("Search spaces", Description = "Search all spaces in your space")]
     public Task<ListSpacesResponse> ListSpaces()
     {

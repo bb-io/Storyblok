@@ -1,8 +1,9 @@
 using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
 
 namespace Apps.Storyblok.Models.Response;
 
-public class FileResponse
+public class FileResponse : IDownloadContentOutput
 {
-    public FileReference File { get; set; }
+    public FileReference Content { get; set; }
 }

@@ -1,5 +1,4 @@
 ﻿using Apps.Storyblok.Api;
-using Apps.Storyblok.ContentConverters;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request.Story;
@@ -23,25 +22,17 @@ using Blackbird.Applications.Sdk.Utils.Html.Extensions;
 using ReverseMarkdown;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using RtfPipe;
 using Blackbird.Applications.Sdk.Utils.RichTextConverter;
 
 namespace Apps.Storyblok.Actions;
-[ActionList]
-public class FieldLocalizationActions : StoryblokInvocable
+[ActionList("Field localization")]
+public class FieldLocalizationActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    : StoryblokInvocable(invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient;
-
     private readonly List<string> LocalizableContentTypes = ["text", "textarea", "richtext", "markdown", "asset"];
 
     private const string BlackbirdBlockIdAttribute = "blackbird-block-id";
     private const string BlackbirdFieldNameAttribute = "blackbird-field-name";
-
-    public FieldLocalizationActions(InvocationContext invocationContext, 
-        IFileManagementClient fileManagementClient) : base(invocationContext)
-    {
-        _fileManagementClient = fileManagementClient;
-    }
 
     [Action("Get story as HTML for translation",
         Description = "Get story as HTML for translation (field level localization)")]
@@ -49,13 +40,13 @@ public class FieldLocalizationActions : StoryblokInvocable
         [ActionParameter] StoryRequest storyRequest,
         [ActionParameter] GetStoryAsHtmlRequest getStoryAsHtmlRequest)
     {
-        var endpoint = $"/v1/spaces/{storyRequest.SpaceId}/stories/{storyRequest.StoryId}";
+        var endpoint = $"/v1/spaces/{storyRequest.SpaceId}/stories/{storyRequest.ContentId}";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         var html = await AssemblyStoryHtml(response.Story, storyRequest.SpaceId, getStoryAsHtmlRequest);
         using var stream = new MemoryStream(html);
-        var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{storyRequest.StoryId}.html");
-        return new() { File = file };
+        var file = await fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{storyRequest.ContentId}.html");
+        return new() { Content = file };
     }
 
     [Action("Translate story from HTML file", Description = "Translate story from HTML file (field level localization)")]
@@ -64,11 +55,11 @@ public class FieldLocalizationActions : StoryblokInvocable
         [ActionParameter] LanguageRequest languageRequest,
         [ActionParameter] TranslateStoryWithHtmlRequest translateStoryWithHtmlRequest)
     {
-        var fileStream = await _fileManagementClient.DownloadAsync(translateStoryWithHtmlRequest.File);
+        var fileStream = await fileManagementClient.DownloadAsync(translateStoryWithHtmlRequest.File);
         var fileBytes = await fileStream.GetByteData();
         var html = Encoding.UTF8.GetString(fileBytes);
 
-        var endpoint = $"/v1/spaces/{storyRequest.SpaceId}/stories/{storyRequest.StoryId}";
+        var endpoint = $"/v1/spaces/{storyRequest.SpaceId}/stories/{storyRequest.ContentId}";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         
@@ -174,7 +165,7 @@ public class FieldLocalizationActions : StoryblokInvocable
 
         var test = content.ToString();
 
-        var endpoint = $"/v1/spaces/{spaceId}/stories/{storyEntity.Id}";
+        var endpoint = $"/v1/spaces/{spaceId}/stories/{storyEntity.ContentId}";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds);
         request.AddStringBody(JsonConvert.SerializeObject(new
         {

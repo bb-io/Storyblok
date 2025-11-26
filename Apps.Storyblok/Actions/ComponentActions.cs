@@ -13,13 +13,9 @@ using RestSharp;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
-public class ComponentActions : StoryblokInvocable
-{
-    public ComponentActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-    
+[ActionList("Components")]
+public class ComponentActions(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
+{    
     [Action("Search components", Description = "List all components in your space")]
     public Task<ListComponentsResponse> ListComponents(
         [ActionParameter] SpaceRequest space)

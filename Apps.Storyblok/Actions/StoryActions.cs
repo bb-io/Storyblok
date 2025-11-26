@@ -18,6 +18,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
+using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
@@ -27,17 +28,10 @@ using System.Text;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
-public class StoryActions : StoryblokInvocable
+[ActionList("Stories")]
+public class StoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : StoryblokInvocable(invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient;
-
-    public StoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : base(
-        invocationContext)
-    {
-        _fileManagementClient = fileManagementClient;
-    }
-
+    [BlueprintActionDefinition(BlueprintAction.SearchContent)]
     [Action("Search stories", Description = "Search all stories in your space")]
     public async Task<ListStoriesResponse> ListStories(
         [ActionParameter] SpaceRequest space,
@@ -48,10 +42,10 @@ public class StoryActions : StoryblokInvocable
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         var tags = tagsInput?.Tags?
-       .Where(t => !string.IsNullOrWhiteSpace(t))
-       .Select(t => t.Trim())
-       .Distinct(StringComparer.OrdinalIgnoreCase)
-       .ToArray();
+           .Where(t => !string.IsNullOrWhiteSpace(t))
+           .Select(t => t.Trim())
+           .Distinct(StringComparer.OrdinalIgnoreCase)
+           .ToArray();
 
         if (tags is { Length: > 0 })
             request.AddQueryParameter("with_tag", string.Join(",", tags));
@@ -63,20 +57,20 @@ public class StoryActions : StoryblokInvocable
     [Action("Get story", Description = "Get details of a specific story")]
     public async Task<StoryEntity> GetStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
     }
 
-    [Action("Export story content",
-        Description = "Exports the localizable content to JSON where all the values can be translated.")]
+    [BlueprintActionDefinition(BlueprintAction.DownloadContent)]
+    [Action("Export story content", Description = "Exports the localizable content to JSON where all the values can be translated.")]
     public async Task<FileResponse> ExportStoryContent(
         [ActionParameter] StoryRequest story,
         [ActionParameter] OptionalLanguage language)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/export.json";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}/export.json";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
         request.AddQueryParameter("lang_code", language.Language ?? string.Empty);
 
@@ -85,29 +79,33 @@ public class StoryActions : StoryblokInvocable
 
         var html = StoryblokToHtmlConverter.ToHtml(contentJson);
         using var stream = new MemoryStream(html);
-        var file = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.StoryId}.html");
-        return new() { File = file };
+        var file = await fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.ContentId}.html");
+        return new() { Content = file };
     }
 
+    [BlueprintActionDefinition(BlueprintAction.UploadContent)]
     [Action("Import story content", Description = "Imports a translated story export.")]
-    public async Task<StoryEntity> ImportStoryContent(
-        [ActionParameter] StoryRequest story,
-        [ActionParameter] ImportRequest import)
-    {
-        var fileStream = await _fileManagementClient.DownloadAsync(import.Content);
+    public async Task<StoryEntity> ImportStoryContent([ActionParameter] ImportStoryRequest input) 
+    { 
+        var fileStream = await fileManagementClient.DownloadAsync(input.Content);
         var html = Encoding.UTF8.GetString(await fileStream.GetByteData());
 
         if (Xliff2Serializer.IsXliff2(html))
         {
-            html = Transformation.Parse(html, import.Content.Name).Target().Serialize();
+            html = Transformation.Parse(html, input.Content.Name).Target().Serialize();
             if (html == null) throw new PluginMisconfigurationException("XLIFF did not contain any files");
         }
 
-        var json = StoryblokToJsonConverter.ToJson(html, story.StoryId);
+        var json = StoryblokToJsonConverter.ToJson(html, input.ContentId);
 
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/import.json";
+        var endpoint = $"/v1/spaces/{input.SpaceId}/stories/{input.ContentId}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .AddJsonBody(new { data = json });
+
+        if (!string.IsNullOrEmpty(input.Locale))
+        {
+            request.AddQueryParameter("lang_code", input.Locale);
+        }
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
@@ -118,7 +116,7 @@ public class StoryActions : StoryblokInvocable
         [ActionParameter] StoryRequest story,
         [ActionParameter] LanguageRequest input)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .WithJsonBody(new UpdateStoryRequest(input), JsonConfig.Settings);
 
@@ -142,7 +140,7 @@ public class StoryActions : StoryblokInvocable
     [Action("Delete story", Description = "Delete specific story")]
     public Task DeleteStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}";
         var request = new StoryblokRequest(endpoint, Method.Delete, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
@@ -151,7 +149,7 @@ public class StoryActions : StoryblokInvocable
     [Action("Publish story", Description = "Publish specific story")]
     public Task PublishStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/publish";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}/publish";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
@@ -160,7 +158,7 @@ public class StoryActions : StoryblokInvocable
     [Action("Unpublish story", Description = "Unpublish specific story")]
     public Task UnpublishStory([ActionParameter] StoryRequest story)
     {
-        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.StoryId}/unpublish";
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}/unpublish";
         var request = new StoryblokRequest(endpoint, Method.Get, Creds);
 
         return Client.ExecuteWithErrorHandling(request);
@@ -180,7 +178,7 @@ public class StoryActions : StoryblokInvocable
         if (newTags == null || newTags.Length == 0)
             throw new PluginMisconfigurationException("Provide at least one non-empty tag.");
 
-        if (!long.TryParse(story.StoryId, out var storyId))
+        if (!long.TryParse(story.ContentId, out var storyId))
             throw new PluginMisconfigurationException("Story ID must be a numeric.");
 
 
@@ -233,7 +231,7 @@ public class StoryActions : StoryblokInvocable
         if (string.IsNullOrWhiteSpace(tagToRemove))
             throw new PluginMisconfigurationException("Tag must be provided.");
 
-        if (!long.TryParse(story.StoryId, out var storyId))
+        if (!long.TryParse(story.ContentId, out var storyId))
             throw new PluginMisconfigurationException("Story ID must be numeric.");
 
         var current = await GetStory(story);
