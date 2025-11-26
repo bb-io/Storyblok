@@ -98,8 +98,14 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
 
         var json = StoryblokToJsonConverter.ToJson(html, input.ContentId);
 
-        var endpoint = $"/v1/spaces/{input.SpaceId}/stories/{input.ContentId}/import.json?lang_code={input.Locale}";
-        var request = new StoryblokRequest(endpoint, Method.Put, Creds).AddJsonBody(new { data = json });
+        var endpoint = $"/v1/spaces/{input.SpaceId}/stories/{input.ContentId}/import.json";
+        var request = new StoryblokRequest(endpoint, Method.Put, Creds)
+            .AddJsonBody(new { data = json });
+
+        if (!string.IsNullOrEmpty(input.Locale))
+        {
+            request.AddQueryParameter("lang_code", input.Locale);
+        }
 
         var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
         return response.Story;
