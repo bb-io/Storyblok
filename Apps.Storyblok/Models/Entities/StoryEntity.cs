@@ -25,7 +25,7 @@ public class StoryEntity : IDownloadContentInput, IDownloadContentOutput
 
     [Display("Published at")] public DateTime? PublishedAt { get; set; }
 
-    [Display("Story ID"), JsonProperty("story_id")] public string ContentId { get; set; }
+    [Display("Story ID"), JsonProperty("id")] public string ContentId { get; set; }
 
     [Display("UUID")] public string Uuid { get; set; }
 
