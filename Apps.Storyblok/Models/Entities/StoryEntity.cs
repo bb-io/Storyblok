@@ -1,6 +1,7 @@
 ﻿using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
+using Newtonsoft.Json;
 
 namespace Apps.Storyblok.Models.Entities;
 
@@ -24,7 +25,7 @@ public class StoryEntity : IDownloadContentInput, IDownloadContentOutput
 
     [Display("Published at")] public DateTime? PublishedAt { get; set; }
 
-    [Display("Story ID")] public string ContentId { get; set; }
+    [Display("Story ID"), JsonProperty("id")] public string ContentId { get; set; }
 
     [Display("UUID")] public string Uuid { get; set; }
 
