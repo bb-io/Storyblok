@@ -6,6 +6,7 @@ using Blackbird.Applications.Sdk.Utils.Html.Extensions;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -34,7 +35,19 @@ public static class StoryblokToJsonConverter
 
         dictionaryData[ConverterConstants.PageIdNode] = pageId;
 
-        return JsonConvert.SerializeObject(dictionaryData);
+        var settings = new JsonSerializerSettings
+        {
+            StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+            Formatting = Formatting.None
+        };
+        
+        var json = JsonConvert.SerializeObject(dictionaryData, settings);
+        
+        // Decode escaped HTML entities back to their original form
+        json = Regex.Replace(json, @"\u003c", "<");
+        json = Regex.Replace(json, @"\u003e", ">");
+        
+        return json;
     }
 
     private static KeyValuePair<string, string> MapComponentToHtmlTag(HtmlNode node, string originalUUID)
@@ -181,12 +194,12 @@ public static class StoryblokToJsonConverter
         if (headerRow == null)
             throw new PluginMisconfigurationException("Table <thead> must contain a <tr> element.");
 
-        var headers = headerRow.SelectNodes("th")?.Select(th => HttpUtility.HtmlDecode(th.InnerText.Trim())).ToList();
+        var headers = headerRow.SelectNodes("th")?.Select(th => ConvertHtmlCellToMarkdown(th)).ToList();
         if (headers == null || !headers.Any())
             throw new PluginMisconfigurationException("Table <thead> must contain at least one <th> element.");
 
         var rows = tbody.SelectNodes("tr")?.Select(tr =>
-            tr.SelectNodes("td")?.Select(td => HttpUtility.HtmlDecode(td.InnerText.Trim())).ToList()
+            tr.SelectNodes("td")?.Select(td => ConvertHtmlCellToMarkdown(td)).ToList()
         ).ToList() ?? new List<List<string>>();
 
         var columnWidths = new int[headers.Count];
@@ -227,5 +240,66 @@ public static class StoryblokToJsonConverter
         }
 
         return markdown.ToString();
+    }
+
+    private static string ConvertHtmlCellToMarkdown(HtmlNode cellNode)
+    {
+        var result = new StringBuilder();
+        ProcessNode(cellNode, result);
+        return result.ToString().Trim();
+    }
+
+    private static void ProcessNode(HtmlNode node, StringBuilder result, bool inList = false)
+    {
+        foreach (var child in node.ChildNodes)
+        {
+            if (child.NodeType == HtmlNodeType.Text)
+            {
+                result.Append(HttpUtility.HtmlDecode(child.InnerText));
+            }
+            else if (child.Name == "a")
+            {
+                var href = child.GetAttributeValue("href", "");
+                var text = HttpUtility.HtmlDecode(child.InnerText.Trim());
+                var newtab = child.GetAttributeValue("newtab", null);
+                
+                if (!string.IsNullOrEmpty(newtab))
+                    result.Append($"[{text}]({href}){{ newtab }}");
+                else
+                    result.Append($"[{text}]({href})");
+            }
+            else if (child.Name == "ul")
+            {
+                result.Append("<ul>");
+                ProcessNode(child, result, true);
+                result.Append("</ul>");
+            }
+            else if (child.Name == "li")
+            {
+                result.Append("<li>");
+                ProcessNode(child, result, true);
+                result.Append("</li>");
+            }
+            else if (child.Name == "strong")
+            {
+                result.Append("**");
+                ProcessNode(child, result, inList);
+                result.Append("**");
+            }
+            else if (child.Name == "p")
+            {
+                ProcessNode(child, result, inList);
+                if (!inList)
+                    result.Append(" ");
+            }
+            else if (child.Name == "br")
+            {
+                result.Append(" ");
+            }
+            else
+            {
+                ProcessNode(child, result, inList);
+            }
+        }
     }
 }

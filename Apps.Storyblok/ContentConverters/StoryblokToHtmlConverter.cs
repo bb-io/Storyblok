@@ -50,7 +50,15 @@ public static class StoryblokToHtmlConverter
 
                 if (x.Key.Contains(ConverterConstants.RichTextId))
                 {
-                    ConvertRichTextToHtml(doc, node, x.Value);
+                    // Check if the value is a valid JSON object or plain text
+                    if (IsValidJson(x.Value))
+                    {
+                        ConvertRichTextToHtml(doc, node, x.Value);
+                    }
+                    else
+                    {
+                        node.InnerHtml = HtmlDocument.HtmlEncode(x.Value);
+                    }
                 }
                 else if (x.Key.EndsWith(ConverterConstants.TableId))
                 {
@@ -267,4 +275,27 @@ public static class StoryblokToHtmlConverter
         "paragraph" => HtmlConstants.Paragraph,
         _ => HtmlConstants.Div
     };
+
+    private static bool IsValidJson(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        text = text.Trim();
+        if ((!text.StartsWith("{") || !text.EndsWith("}")) && 
+            (!text.StartsWith("[") || !text.EndsWith("]")))
+        {
+            return false;
+        }
+
+        try
+        {
+            JToken.Parse(text);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
