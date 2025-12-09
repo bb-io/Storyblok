@@ -15,7 +15,7 @@ public class ImportStoryRequest : IUploadContentInput
 
     [Display("Locale")]
     [StaticDataSource(typeof(LanguageDataHandler))]
-    public string Locale { get; set; }
+    public string? Locale { get; set; }
 
     [Display("Story ID")]
     [DataSource(typeof(StoryDataHandler))]
