@@ -8,7 +8,7 @@ public class AssetReplacedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "asset.replaced";
 
-    public AssetReplacedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public AssetReplacedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

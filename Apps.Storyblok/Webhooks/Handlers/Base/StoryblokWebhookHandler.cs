@@ -17,7 +17,7 @@ public abstract class StoryblokWebhookHandler : IWebhookEventHandler
     private string SpaceId { get; }
     private StoryblokClient Client { get; }
 
-    public StoryblokWebhookHandler([WebhookParameter] SpaceRequest space)
+    public StoryblokWebhookHandler([WebhookParameter(true)] SpaceRequest space)
     {
         SpaceId = space.SpaceId;
         Client = new();

@@ -1,8 +1,11 @@
 ﻿using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Files;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
+using Newtonsoft.Json;
 
 namespace Apps.Storyblok.Models.Entities;
 
-public class StoryEntity
+public class StoryEntity : IDownloadContentInput, IDownloadContentOutput
 {
     [Display("Name")] public string Name { get; set; }
     
@@ -22,7 +25,7 @@ public class StoryEntity
 
     [Display("Published at")] public DateTime? PublishedAt { get; set; }
 
-    [Display("Story ID")] public string Id { get; set; }
+    [Display("Story ID"), JsonProperty("id")] public string ContentId { get; set; }
 
     [Display("UUID")] public string Uuid { get; set; }
 
@@ -65,4 +68,7 @@ public class StoryEntity
     [Display("Tag list")] public IEnumerable<string> TagList { get; set; }
 
     [Display("Cannot view")] public bool CannotView { get; set; }
+
+    [DefinitionIgnore] public object Content { get; set; }
+    FileReference IDownloadContentOutput.Content { get => throw new NotImplementedException(); set => Content = value; }
 }

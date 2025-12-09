@@ -1,16 +1,17 @@
 ﻿using Apps.Storyblok.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
+using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
 
 namespace Apps.Storyblok.Models.Request.Story;
 
-public class StoryRequest
+public class StoryRequest : IDownloadContentInput
 {
-    [Display("Space")]
+    [Display("Space ID")]
     [DataSource(typeof(SpaceDataHandler))]
     public string SpaceId { get; set; }
 
-    [Display("Story")]
+    [Display("Story ID")]
     [DataSource(typeof(StoryDataHandler))]
-    public string StoryId { get; set; }
+    public string ContentId { get; set; }
 }

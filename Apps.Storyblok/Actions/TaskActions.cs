@@ -14,14 +14,10 @@ using RestSharp;
 
 namespace Apps.Storyblok.Actions;
 
-[ActionList]
-public class TaskActions : StoryblokInvocable
+[ActionList("Tasks")]
+public class TaskActions(InvocationContext invocationContext) : StoryblokInvocable(invocationContext)
 {
-    public TaskActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
-    [Action("List tasks", Description = "List all tasks in your space")]
+    [Action("Search tasks", Description = "List all tasks in your space")]
     public async Task<ListTasksResponse> ListTasks(
         [ActionParameter] SpaceRequest space)
     {

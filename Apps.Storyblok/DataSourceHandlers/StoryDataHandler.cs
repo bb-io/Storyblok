@@ -34,6 +34,6 @@ public class StoryDataHandler : StoryblokInvocable, IAsyncDataSourceHandler
             .Where(x => context.SearchString is null ||
                         x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(x => x.CreatedAt)
-            .ToDictionary(x => x.Id, x => x.Name);
+            .ToDictionary(x => x.ContentId, x => x.Name);
     }
 }

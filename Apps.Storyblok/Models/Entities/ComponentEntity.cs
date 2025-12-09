@@ -21,4 +21,6 @@ public class ComponentEntity
     [Display("Is nestable")] public bool IsNestable { get; set; }
 
     [Display("Component group UUID")] public string? ComponentGroupUuid { get; set; }
+
+    [DefinitionIgnore] public object Schema { get; set; }
 }

@@ -8,7 +8,7 @@ public class AssetCreatedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "asset.created";
 
-    public AssetCreatedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public AssetCreatedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }

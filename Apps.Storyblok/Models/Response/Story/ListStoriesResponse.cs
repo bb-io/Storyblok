@@ -2,4 +2,4 @@
 
 namespace Apps.Storyblok.Models.Response.Story;
 
-public record ListStoriesResponse(List<StoryEntity> Stories);
+public record ListStoriesResponse(List<StoryEntity> Items);

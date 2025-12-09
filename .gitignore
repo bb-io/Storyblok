@@ -354,3 +354,14 @@ healthchecksdb
 *.DS_Store
 *.dmg
 *.env
+/ConsoleApp1
+/Tests.Storyblok/appsettings.json
+/Tests.Storyblok/TestFiles/Input/669571308.html
+/Tests.Storyblok/TestFiles/Input/669571308_original.html
+/Tests.Storyblok/TestFiles/Input/670488971.html
+/Tests.Storyblok/TestFiles/Input/test.html
+/Tests.Storyblok/TestFiles/Input/669571308-good.html
+/Tests.Storyblok/TestFiles/Input/677425912.html
+/Tests.Storyblok/TestFiles/Input/677627238.html
+/Tests.Storyblok/TestFiles/Input/677627238_XliffToHtml.html
+/Tests.Storyblok/appsettings.json

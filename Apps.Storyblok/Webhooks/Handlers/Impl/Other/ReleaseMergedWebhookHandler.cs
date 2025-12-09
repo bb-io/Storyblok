@@ -8,7 +8,7 @@ public class ReleaseMergedWebhookHandler : StoryblokWebhookHandler
 {
     protected override string Event => "release.merged";
 
-    public ReleaseMergedWebhookHandler([WebhookParameter] SpaceRequest space) : base(space)
+    public ReleaseMergedWebhookHandler([WebhookParameter(true)] SpaceRequest space) : base(space)
     {
     }
 }
