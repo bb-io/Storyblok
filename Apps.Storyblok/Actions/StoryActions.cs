@@ -87,6 +87,11 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
     [Action("Import story content", Description = "Imports a translated story export.")]
     public async Task<StoryEntity> ImportStoryContent([ActionParameter] ImportStoryRequest input) 
     { 
+        if(input.Locale != null && input.FullSlug != null)
+        {
+            throw new PluginMisconfigurationException("You can only provide either Locale or Full slug, not both. It's a different localization approaches.");
+        }
+        
         var fileStream = await fileManagementClient.DownloadAsync(input.Content);
         var html = Encoding.UTF8.GetString(await fileStream.GetByteData());
 
@@ -97,8 +102,13 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         }
 
         var json = StoryblokToJsonConverter.ToJson(html, input.ContentId);
-
-        var endpoint = $"/v1/spaces/{input.SpaceId}/stories/{input.ContentId}/import.json";
+        var contentIdToImport = input.ContentId;
+        if (input.UseDimensionLocalizationStrategy == true)
+        {
+            contentIdToImport = await GetOrCreateAlternateBySlug(input.SpaceId, input.ContentId, input.FullSlug, json);
+        }
+        
+        var endpoint = $"/v1/spaces/{input.SpaceId}/stories/{contentIdToImport}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .AddJsonBody(new { data = json });
 
@@ -266,5 +276,88 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         await Task.Delay(1000);
 
         return await GetStory(story);
+    }
+    
+    private async Task<string> GetOrCreateAlternateBySlug(string spaceId, string storyId, string? fullSlug, string json)
+    {
+        var endpoint = $"/v1/spaces/{spaceId}/stories/{storyId}";
+        var request = new StoryblokRequest(endpoint, Method.Get, Creds);
+        
+        var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request)
+            ?? throw new PluginApplicationException("Failed to retrieve story details.");
+
+        if (fullSlug != null)
+        {
+            if(response?.Story.Alternates?.Any(x => x.FullSlug == fullSlug) == true)
+            {
+                var alternate = response.Story.Alternates.First(x => x.FullSlug == fullSlug);
+                return alternate.Id;
+            }
+        }
+        else
+        {
+            var jObject = Newtonsoft.Json.Linq.JObject.Parse(json);
+            var urlPropertyValue = jObject["url"]?.ToString();
+            if (!string.IsNullOrEmpty(urlPropertyValue) && urlPropertyValue != response.Story.FullSlug)
+            {
+                var alternate = response.Story.Alternates?.FirstOrDefault(x => x.FullSlug == urlPropertyValue);
+                if (alternate != null)
+                {
+                    return alternate.Id;
+                }
+                
+                fullSlug = urlPropertyValue;
+            }
+        }
+        
+        var duplicateResponse = await DuplicateStory(spaceId, storyId, response!.Story.GroupId, fullSlug);
+        return duplicateResponse.ContentId;
+    }
+
+    /*
+ * Duplicate a Story
+ * https://mapi.storyblok.com/v1/spaces/:space_id/stories/:story_id/duplicate
+Path parameters
+:space_id required number
+Numeric ID of a space
+
+:story_id required number
+ID of the story
+
+Request body properties
+story The Story Object
+Any attributes sent here will be copied to the duplicated story. To link duplicated stories as alternates, specify a group_id in the story object.
+
+target_dimension number
+The id of the target folder.
+
+same_path boolean
+If set to true, the current story’s path attribute will used for the duplicated story.
+
+Response properties
+story The Story Object
+A single story object
+ */
+    
+    private async Task<StoryEntity> DuplicateStory(string spaceId, string storyId, string groupId, string fullSlug)
+    {
+        var slugParts = fullSlug.Split('/');
+        var storySlug = slugParts.Last();
+        
+        var endpoint = $"/v1/spaces/{spaceId}/stories/{storyId}/duplicate";
+        var payload = new
+        {
+            story = new
+            {
+                slug = storySlug,
+                group_id = groupId,
+                full_slug = fullSlug
+            }
+        };
+        
+        var request = new StoryblokRequest(endpoint, Method.Post, Creds)
+            .AddJsonBody(payload);
+        var response = await Client.ExecuteWithErrorHandling<StoryResponse>(request);
+        return response.Story;
     }
 }

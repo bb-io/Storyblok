@@ -17,6 +17,12 @@ public class ImportStoryRequest : IUploadContentInput
     [StaticDataSource(typeof(LanguageDataHandler))]
     public string? Locale { get; set; }
 
+    [Display("Use dimension localization strategy")]
+    public bool? UseDimensionLocalizationStrategy { get; set; }
+    
+    [Display("Full slug", Description = "Specify this input instead of the locale if you are using dimensions and want to create a new dimension")]
+    public string? FullSlug { get; set; }
+
     [Display("Story ID")]
     [DataSource(typeof(StoryDataHandler))]
     public string ContentId { get; set; }
