@@ -36,7 +36,9 @@ Storyblok is a headless content management. This Storyblok application primarily
 ### Stories
 
 - **Export story content** returns story content as an HTML file.
-- **Import story content** updates story content from an HTML file.
+- **Import story content** updates story content from an HTML file. Supports two localization strategies:
+  - **Field-level localization** using `Locale` parameter (e.g., 'en', 'de')
+  - **Dimension localization** using `Use dimension localization strategy` flag with `Full slug` parameter. Dimensions create separate stories for each locale linked through alternates. Set `Create dimension if not exists` to automatically create new dimension stories.
 - **Search/Get/Create/Update/Delete stories**
 - **Publish/Unpublish story**
 - **Get story as HTML for translation** gets story as an HTML file for field level localization.
