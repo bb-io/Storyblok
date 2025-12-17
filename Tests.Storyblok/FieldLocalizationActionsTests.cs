@@ -13,8 +13,8 @@ public class FieldLocalizationActionsTests : TestBase
         var actions = new FieldLocalizationActions(InvocationContext, FileManager);
         var storyRequest = new StoryRequest
         {
-            SpaceId = "173562",
-            ContentId = "662894163"
+            SpaceId = "312456",
+            ContentId = "123628755074238"
         };
 
         var languageRequest = new GetStoryAsHtmlRequest

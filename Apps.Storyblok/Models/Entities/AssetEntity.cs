@@ -1,7 +1,7 @@
 ﻿namespace Apps.Storyblok.Models.Entities;
 public class AssetEntity
 {
-    public int? Id { get; set; }
+    public long? Id { get; set; }
     public string Alt { get; set; }
     public string Name { get; set; }
     public string Focus { get; set; }
