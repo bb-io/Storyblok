@@ -1,28 +1,28 @@
 ﻿using Apps.Storyblok.Api;
+using Apps.Storyblok.ContentConverters.Constants;
 using Apps.Storyblok.Invocables;
 using Apps.Storyblok.Models.Entities;
 using Apps.Storyblok.Models.Request.Story;
-using Apps.Storyblok.Models.Response.Story;
 using Apps.Storyblok.Models.Response;
-using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using RestSharp;
-using System.Net.Mime;
-using Blackbird.Applications.Sdk.Utils.Extensions.Files;
-using Newtonsoft.Json.Linq;
 using Apps.Storyblok.Models.Response.Component;
+using Apps.Storyblok.Models.Response.Story;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Applications.Sdk.Utils.Html.Extensions;
+using Blackbird.Applications.Sdk.Utils.RichTextConverter;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using HtmlAgilityPack;
 using Markdig;
-using Apps.Storyblok.ContentConverters.Constants;
-using System.Text;
-using Blackbird.Applications.Sdk.Utils.Html.Extensions;
-using ReverseMarkdown;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using Blackbird.Applications.Sdk.Utils.RichTextConverter;
+using RestSharp;
+using ReverseMarkdown;
+using System.Net.Mime;
+using System.Text;
 
 namespace Apps.Storyblok.Actions;
 [ActionList("Field localization")]
@@ -99,6 +99,7 @@ public class FieldLocalizationActions(InvocationContext invocationContext, IFile
         {
             var contentElementType = contentElement["type"].ToString();
             var componentKey = contentElement.Parent.ToObject<JProperty>().Name;
+            var fieldType = contentElement["field_type"]?.ToString();
 
             if (contentElementType == "bloks")
             {
@@ -111,6 +112,29 @@ public class FieldLocalizationActions(InvocationContext invocationContext, IFile
                     var nestedBlockContent = await ProcessNestedBlocksRecursively(blockElement, spaceId, getStoryAsHtmlRequest);
                     if (!string.IsNullOrWhiteSpace(nestedBlockContent.InnerHtml))
                         resultNode.AppendChild(nestedBlockContent);
+                }
+            }
+            else if (contentElementType == "custom" && fieldType == "seo-metatags")
+            {
+                if (content[componentKey] is JObject seoContent)
+                {
+                    var title = seoContent["title"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(title))
+                    {
+                        var titleNode = HtmlNode.CreateNode("<p></p>");
+                        titleNode.Attributes.Add(BlackbirdFieldNameAttribute, $"{componentKey}.title");
+                        titleNode.InnerHtml = title;
+                        resultNode.AppendChild(titleNode);
+                    }
+
+                    var desc = seoContent["description"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(desc))
+                    {
+                        var descNode = HtmlNode.CreateNode("<p></p>");
+                        descNode.Attributes.Add(BlackbirdFieldNameAttribute, $"{componentKey}.description");
+                        descNode.InnerHtml = desc;
+                        resultNode.AppendChild(descNode);
+                    }
                 }
             }
             else if (LocalizableContentTypes.Contains(contentElementType) && content[componentKey] != null)
@@ -192,6 +216,7 @@ public class FieldLocalizationActions(InvocationContext invocationContext, IFile
         {
             var contentElementType = contentElement["type"].ToString();
             var componentKey = contentElement.Parent.ToObject<JProperty>().Name;
+            var fieldType = contentElement["field_type"]?.ToString();
 
             if (contentElementType == "bloks")
             {
@@ -202,6 +227,27 @@ public class FieldLocalizationActions(InvocationContext invocationContext, IFile
                 foreach (var blockElement in nestedBlock)
                 {
                     await TranslateStoryContentRecursively(blockElement, html.ChildNodes.FirstOrDefault(x => x.Attributes.Any(x => x.Name == BlackbirdBlockIdAttribute && x.Value == blockElement["_uid"].ToString())), spaceId, targetLanguage);
+                }
+            }
+            else if (contentElementType == "custom" && fieldType == "seo-metatags")
+            {
+                var translatedFieldName = $"{componentKey}__i18n__{targetLanguage}";
+                var titleElement = html.ChildNodes.FirstOrDefault(x => 
+                    x.Attributes.Any(a => a.Name == BlackbirdFieldNameAttribute && a.Value == $"{componentKey}.title")
+                );
+                var descElement = html.ChildNodes.FirstOrDefault(x => 
+                    x.Attributes.Any(a => a.Name == BlackbirdFieldNameAttribute && a.Value == $"{componentKey}.description")
+                );
+
+                if (titleElement != null || descElement != null)
+                {
+                    var originalSeo = content[componentKey] as JObject;
+                    var newSeo = originalSeo != null ? (JObject)originalSeo.DeepClone() : [];
+
+                    if (titleElement != null) newSeo["title"] = titleElement.InnerHtml;
+                    if (descElement != null) newSeo["description"] = descElement.InnerHtml;
+
+                    content[translatedFieldName] = newSeo;
                 }
             }
             else if (LocalizableContentTypes.Contains(contentElementType) && content[componentKey] != null)
