@@ -16,11 +16,12 @@ public class FieldLocalizationActionsTests : TestBase
         var storyRequest = new StoryRequest
         {
             SpaceId = "102628",
-            ContentId = "119062369061925"
+            ContentId = "126856115522986"
         };
 
         var languageRequest = new GetStoryAsHtmlRequest
         {
+            ExcludedFields = ["related_articles"]
         };
 
         var result = await actions.GetStoryAsHtml(storyRequest, languageRequest);

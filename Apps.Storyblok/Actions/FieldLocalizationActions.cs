@@ -99,6 +99,10 @@ public class FieldLocalizationActions(InvocationContext invocationContext, IFile
         {
             var contentElementType = contentElement["type"].ToString();
             var componentKey = contentElement.Parent.ToObject<JProperty>().Name;
+
+            if (getStoryAsHtmlRequest.ExcludedFields != null && getStoryAsHtmlRequest.ExcludedFields.Contains(componentKey))
+                continue;
+
             var fieldType = contentElement["field_type"]?.ToString();
 
             if (contentElementType == "bloks")
