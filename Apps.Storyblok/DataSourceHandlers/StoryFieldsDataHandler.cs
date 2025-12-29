@@ -19,7 +19,7 @@ public class StoryFieldsDataHandler(InvocationContext context, [ActionParameter]
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(story.ContentId))
-            throw new PluginMisconfigurationException();
+            throw new PluginMisconfigurationException("You have to input 'Story ID' first");
 
         var storyEndpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}";
         var storyRequest = new StoryblokRequest(storyEndpoint, Method.Get, Creds);
