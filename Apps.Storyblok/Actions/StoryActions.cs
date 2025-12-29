@@ -18,6 +18,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
+using Blackbird.Applications.Sdk.Utils.Html.Extensions;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
@@ -77,7 +78,7 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         var response = await Client.ExecuteWithErrorHandling(request);
         var contentJson = response.Content!;
 
-        var html = StoryblokToHtmlConverter.ToHtml(contentJson);
+        var html = StoryblokToHtmlConverter.ToHtml(contentJson, story.SpaceId, story.ContentId);
         using var stream = new MemoryStream(html);
         var file = await fileManagementClient.UploadAsync(stream, MediaTypeNames.Text.Html, $"{story.ContentId}.html");
         return new() { Content = file };
@@ -101,14 +102,24 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
             if (html == null) throw new PluginMisconfigurationException("XLIFF did not contain any files");
         }
 
-        var json = StoryblokToJsonConverter.ToJson(html, input.ContentId);
-        var contentIdToImport = input.ContentId;
+        var htmlDoc = html.AsHtmlDocument();
+        var spaceIdFromFile = htmlDoc.DocumentNode.SelectSingleNode("//meta[@name='storyblok-space-id']")?.GetAttributeValue("content", null);
+        var storyIdFromFile = htmlDoc.DocumentNode.SelectSingleNode("//meta[@name='storyblok-story-id']")?.GetAttributeValue("content", null);
+        
+        var spaceId = input.SpaceId ?? spaceIdFromFile;
+        if (string.IsNullOrEmpty(spaceId))
+            throw new PluginMisconfigurationException("Space ID is required. Please provide it as input or ensure it exists in the HTML file metadata.");
+        
+        var contentId = input.ContentId;
+
+        var json = StoryblokToJsonConverter.ToJson(html, contentId);
+        var contentIdToImport = contentId;
         if (input.UseDimensionLocalizationStrategy == true)
         {
-            contentIdToImport = await GetOrCreateAlternateBySlug(input.SpaceId, input.ContentId, input.FullSlug, json, input.CreateDimensionIfNotExists ?? false);
+            contentIdToImport = await GetOrCreateAlternateBySlug(spaceId, contentId, input.FullSlug, json, input.CreateDimensionIfNotExists ?? false);
         }
         
-        var endpoint = $"/v1/spaces/{input.SpaceId}/stories/{contentIdToImport}/import.json";
+        var endpoint = $"/v1/spaces/{spaceId}/stories/{contentIdToImport}/import.json";
         var request = new StoryblokRequest(endpoint, Method.Put, Creds)
             .AddJsonBody(new { data = json });
 

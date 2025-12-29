@@ -25,13 +25,13 @@ public static class StoryblokToHtmlConverter
         .UseAdvancedExtensions()
         .Build();
 
-    public static byte[] ToHtml(string json)
+    public static byte[] ToHtml(string json, string spaceId, string storyId)
     {
         var translatableData = JsonConvert.DeserializeObject<Dictionary<string, string>>(json)!
             .Where(x => !SkippableFieldSuffixes.Any(suffix => x.Key.EndsWith(suffix)))
             .ToList();
 
-        var (doc, bodyNode) = PrepareEmptyHtmlDocument();
+        var (doc, bodyNode) = PrepareEmptyHtmlDocument(spaceId, storyId);
 
         foreach (var x in translatableData)
         {
@@ -57,6 +57,7 @@ public static class StoryblokToHtmlConverter
                     }
                     else
                     {
+                        AddPrefixSuffixAttributes(node, x.Value);
                         node.InnerHtml = HtmlDocument.HtmlEncode(x.Value);
                     }
                 }
@@ -74,6 +75,7 @@ public static class StoryblokToHtmlConverter
                 }
                 else
                 {
+                    AddPrefixSuffixAttributes(node, x.Value);
                     node.InnerHtml = HtmlDocument.HtmlEncode(x.Value);
                 }
             }
@@ -132,7 +134,9 @@ public static class StoryblokToHtmlConverter
         {
             var cellNode = doc.CreateElement(HtmlConstants.Div);
             cellNode.SetAttributeValue(ConverterConstants.ComponentPath, prop.Path);
-            cellNode.InnerHtml = HtmlDocument.HtmlEncode(prop.Value.ToString());
+            var cellValue = prop.Value.ToString();
+            AddPrefixSuffixAttributes(cellNode, cellValue);
+            cellNode.InnerHtml = HtmlDocument.HtmlEncode(cellValue);
             tableNode.AppendChild(cellNode);
         }
     }
@@ -251,22 +255,79 @@ public static class StoryblokToHtmlConverter
         var textProps = contentObj.Descendants().Where(x => (x as JProperty)?.Name == "text").Cast<JProperty>();
         foreach (var prop in textProps)
         {
-            var span = doc.CreateElement(HtmlConstants.Span);
-            span.SetAttributeValue(ConverterConstants.ComponentPath, prop.Path);
-            span.InnerHtml = HtmlDocument.HtmlEncode(prop.Value.ToString());
-            contentNode.AppendChild(span);
+            var div = doc.CreateElement(HtmlConstants.Div);
+            div.SetAttributeValue(ConverterConstants.ComponentPath, prop.Path);
+            var textValue = prop.Value.ToString();
+            AddPrefixSuffixAttributes(div, textValue);
+            div.InnerHtml = HtmlDocument.HtmlEncode(textValue);
+            contentNode.AppendChild(div);
         }
     }
 
-    private static (HtmlDocument document, HtmlNode bodyNode) PrepareEmptyHtmlDocument()
+    private static (HtmlDocument document, HtmlNode bodyNode) PrepareEmptyHtmlDocument(string spaceId, string storyId)
     {
         var htmlDoc = new HtmlDocument();
         var htmlRoot = htmlDoc.CreateElement(HtmlConstants.Html);
         htmlDoc.DocumentNode.AppendChild(htmlRoot);
-        htmlRoot.AppendChild(htmlDoc.CreateElement(HtmlConstants.Head));
+        
+        var head = htmlDoc.CreateElement(HtmlConstants.Head);
+        htmlRoot.AppendChild(head);
+        
+        var spaceIdMeta = htmlDoc.CreateElement("meta");
+        spaceIdMeta.SetAttributeValue("name", "storyblok-space-id");
+        spaceIdMeta.SetAttributeValue("content", spaceId);
+        head.AppendChild(spaceIdMeta);
+        
+        var storyIdMeta = htmlDoc.CreateElement("meta");
+        storyIdMeta.SetAttributeValue("name", "storyblok-story-id");
+        storyIdMeta.SetAttributeValue("content", storyId);
+        head.AppendChild(storyIdMeta);
+        
         var body = htmlDoc.CreateElement(HtmlConstants.Body);
         htmlRoot.AppendChild(body);
         return (htmlDoc, body);
+    }
+
+    private static void AddPrefixSuffixAttributes(HtmlNode node, string text)
+    {
+        if (text == null || text == string.Empty) return;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            node.SetAttributeValue("data-whitespace-only", "true");
+            return;
+        }
+
+        // Only preserve whitespace characters (space and NBSP)
+        // LLMs don't remove punctuation, only spaces
+        var specialChars = new[] { ' ', '\u00A0' };
+
+        var prefix = "";
+        var suffix = "";
+
+        int prefixEnd = 0;
+        while (prefixEnd < text.Length && specialChars.Contains(text[prefixEnd]))
+        {
+            prefix += text[prefixEnd];
+            prefixEnd++;
+        }
+
+        int suffixStart = text.Length - 1;
+        while (suffixStart >= prefixEnd && specialChars.Contains(text[suffixStart]))
+        {
+            suffixStart--;
+        }
+        
+        if (suffixStart < text.Length - 1)
+        {
+            suffix = text.Substring(suffixStart + 1);
+        }
+
+        if (!string.IsNullOrEmpty(prefix))
+            node.SetAttributeValue("data-prefix", prefix);
+
+        if (!string.IsNullOrEmpty(suffix))
+            node.SetAttributeValue("data-suffix", suffix);
     }
 
     private static string GetRichTextContentTag(string type) => type switch
