@@ -30,7 +30,7 @@ public class ImportStoryRequest : IUploadContentInput
     [DataSource(typeof(StoryDataHandler))]
     public string ContentId { get; set; }
 
-    [Display("Space ID")]
+    [Display("Space ID", Description = "Optional. If not provided, will be read from the HTML file metadata")]
     [DataSource(typeof(SpaceDataHandler))]
-    public string SpaceId { get; set; }
+    public string? SpaceId { get; set; }
 }

@@ -60,6 +60,9 @@ public static class StoryblokToJsonConverter
 
         var componentId = node.Attributes[ConverterConstants.IdAttr].Value;
         var styleValue = node.Attributes[ConverterConstants.StyleValueAttr]?.Value;
+        var prefix = node.Attributes["data-prefix"]?.Value ?? "";
+        var suffix = node.Attributes["data-suffix"]?.Value ?? "";
+        var isWhitespaceOnly = node.Attributes["data-whitespace-only"]?.Value == "true";
 
         if (!string.IsNullOrEmpty(originalUUID) && componentId.Contains(":articlePage:"))
         {
@@ -83,11 +86,11 @@ public static class StoryblokToJsonConverter
         if (translatableFields.Any(field => componentId.EndsWith($":{field}")))
         {
             var htmlContent = HttpUtility.HtmlDecode(node.InnerHtml);
-            return new(componentId, htmlContent);
+            return new(componentId, RestorePrefixSuffix(htmlContent, prefix, suffix, isWhitespaceOnly));
         }
 
         var htmlContentDefault = HttpUtility.HtmlDecode(node.InnerHtml);
-        return new(componentId, htmlContentDefault);
+        return new(componentId, RestorePrefixSuffix(htmlContentDefault, prefix, suffix, isWhitespaceOnly));
     }
 
     private static string ConvertTableToJson(HtmlNode node)
@@ -106,7 +109,13 @@ public static class StoryblokToJsonConverter
             if (token == null)
                 return;
 
-            ((JValue)token).Value = HttpUtility.HtmlDecode(x.InnerHtml);
+            var prefix = x.Attributes["data-prefix"]?.Value ?? "";
+            var suffix = x.Attributes["data-suffix"]?.Value ?? "";
+            var isWhitespaceOnly = x.Attributes["data-whitespace-only"]?.Value == "true";
+            var translatedText = HttpUtility.HtmlDecode(x.InnerHtml);
+            translatedText = RestorePrefixSuffix(translatedText, prefix, suffix, isWhitespaceOnly);
+
+            ((JValue)token).Value = translatedText;
 
             if (path.EndsWith(".text"))
             {
@@ -114,7 +123,7 @@ public static class StoryblokToJsonConverter
                 var parentToken = table.SelectToken(parentPath);
                 if (parentToken != null)
                 {
-                    parentToken["text"] = HttpUtility.HtmlDecode(x.InnerHtml);
+                    parentToken["text"] = translatedText;
                 }
             }
         });
@@ -144,7 +153,11 @@ public static class StoryblokToJsonConverter
 
             if (path.EndsWith(".text"))
             {
+                var prefix = x.Attributes["data-prefix"]?.Value ?? "";
+                var suffix = x.Attributes["data-suffix"]?.Value ?? "";
+                var isWhitespaceOnly = x.Attributes["data-whitespace-only"]?.Value == "true";
                 var translatedText = HttpUtility.HtmlDecode(x.InnerHtml);
+                translatedText = RestorePrefixSuffix(translatedText, prefix, suffix, isWhitespaceOnly);
                 ((JValue)token).Value = translatedText;
 
                 var parentPath = path.Substring(0, path.LastIndexOf(".text"));
@@ -247,6 +260,34 @@ public static class StoryblokToJsonConverter
         var result = new StringBuilder();
         ProcessNode(cellNode, result);
         return result.ToString().Trim();
+    }
+
+    private static string RestorePrefixSuffix(string text, string prefix, string suffix, bool isWhitespaceOnly = false)
+    {
+        if (isWhitespaceOnly)
+        {
+            var whitespace = prefix + suffix;
+            return !string.IsNullOrEmpty(whitespace) ? whitespace : " ";
+        }
+        
+        if (string.IsNullOrEmpty(text))
+        {
+            if (!string.IsNullOrEmpty(prefix) || !string.IsNullOrEmpty(suffix))
+                return prefix + suffix;
+            return text;
+        }
+        
+        var needsPrefix = !string.IsNullOrEmpty(prefix) && !text.StartsWith(prefix);
+        var needsSuffix = !string.IsNullOrEmpty(suffix) && !text.EndsWith(suffix);
+        
+        if (needsPrefix && needsSuffix)
+            return prefix + text + suffix;
+        if (needsPrefix)
+            return prefix + text;
+        if (needsSuffix)
+            return text + suffix;
+        
+        return text;
     }
 
     private static void ProcessNode(HtmlNode node, StringBuilder result, bool inList = false)
