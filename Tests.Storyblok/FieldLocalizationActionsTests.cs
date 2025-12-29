@@ -15,11 +15,8 @@ public class FieldLocalizationActionsTests : TestBase
         var actions = new FieldLocalizationActions(InvocationContext, FileManager);
         var storyRequest = new StoryRequest
         {
-            //SpaceId = "102628",
-            //ContentId = "126856115522986"
-
-            SpaceId = "286695292049554",
-            ContentId = "118702440815187"
+            SpaceId = "102628",
+            ContentId = "119062369061925"
         };
 
         var languageRequest = new GetStoryAsHtmlRequest
@@ -36,12 +33,12 @@ public class FieldLocalizationActionsTests : TestBase
     {
         // Arrange
         var actions = new FieldLocalizationActions(InvocationContext, FileManager);
-        var story = new StoryRequest { SpaceId = "286695292049554", ContentId = "127280115581092" };
-        var language = new LanguageRequest { Lang = "de" };
+        var story = new StoryRequest { SpaceId = "102628", ContentId = "119062369061925" };
+        var language = new LanguageRequest { Lang = "en" };
         var request = new TranslateStoryWithHtmlRequest 
         { 
-            File = new FileReference { Name = "126856115522986.html" },
-            PublishImmediately = true,
+            File = new FileReference { Name = "119062369061925.html" },
+            PublishImmediately = false,
         };
 
         // Act
