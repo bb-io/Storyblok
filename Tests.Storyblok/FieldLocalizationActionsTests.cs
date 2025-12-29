@@ -1,6 +1,8 @@
-﻿using Apps.Storyblok.Actions;
+﻿using Storyblok.Base;
+using Newtonsoft.Json;
+using Apps.Storyblok.Actions;
 using Apps.Storyblok.Models.Request.Story;
-using Storyblok.Base;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Tests.Storyblok;
 
@@ -13,8 +15,11 @@ public class FieldLocalizationActionsTests : TestBase
         var actions = new FieldLocalizationActions(InvocationContext, FileManager);
         var storyRequest = new StoryRequest
         {
-            SpaceId = "312456",
-            ContentId = "123628755074238"
+            //SpaceId = "102628",
+            //ContentId = "126856115522986"
+
+            SpaceId = "286695292049554",
+            ContentId = "118702440815187"
         };
 
         var languageRequest = new GetStoryAsHtmlRequest
@@ -26,4 +31,24 @@ public class FieldLocalizationActionsTests : TestBase
         Assert.IsNotNull(result.Content, "File should not be null");
     }
     
+    [TestMethod]
+    public async Task TranslateStoryWithHtml_ValidStory_ReturnsResponse()
+    {
+        // Arrange
+        var actions = new FieldLocalizationActions(InvocationContext, FileManager);
+        var story = new StoryRequest { SpaceId = "286695292049554", ContentId = "127280115581092" };
+        var language = new LanguageRequest { Lang = "de" };
+        var request = new TranslateStoryWithHtmlRequest 
+        { 
+            File = new FileReference { Name = "126856115522986.html" },
+            PublishImmediately = true,
+        };
+
+        // Act
+        var result = await actions.TranslateStoryWithHtml(story, language, request);
+
+        // Assert
+        Console.WriteLine(JsonConvert.SerializeObject(result));
+        Assert.IsNotNull(result);
+    }
 }
