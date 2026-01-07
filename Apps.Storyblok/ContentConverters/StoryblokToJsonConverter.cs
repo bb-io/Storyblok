@@ -14,6 +14,24 @@ namespace Apps.Storyblok.ContentConverters;
 
 public static class StoryblokToJsonConverter
 {
+    private static string DecodeHtmlEntities(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+        
+        var decoded = HttpUtility.HtmlDecode(text);
+        decoded = decoded
+            .Replace("&quot;", "\"")
+            .Replace("&apos;", "'")
+            .Replace("&#39;", "'")
+            .Replace("&#34;", "\"")
+            .Replace("&amp;", "&")
+            .Replace("&lt;", "<")
+            .Replace("&gt;", ">");
+        
+        return decoded;
+    }
+    
     public static string ToJson(string html, string pageId, string originalUUID = null)
     {
         var htmlDoc = html.AsHtmlDocument();
@@ -85,11 +103,11 @@ public static class StoryblokToJsonConverter
         var translatableFields = new[] { "keywords", "leadText", "metaTitle", "pageTitle", "metaDescription", "title", "articleTitle", "articleDescription", "imageAltTag", "text" };
         if (translatableFields.Any(field => componentId.EndsWith($":{field}")))
         {
-            var htmlContent = HttpUtility.HtmlDecode(node.InnerHtml);
+            var htmlContent = DecodeHtmlEntities(node.InnerHtml);
             return new(componentId, RestorePrefixSuffix(htmlContent, prefix, suffix, isWhitespaceOnly));
         }
 
-        var htmlContentDefault = HttpUtility.HtmlDecode(node.InnerHtml);
+        var htmlContentDefault = DecodeHtmlEntities(node.InnerHtml);
         return new(componentId, RestorePrefixSuffix(htmlContentDefault, prefix, suffix, isWhitespaceOnly));
     }
 
@@ -112,7 +130,7 @@ public static class StoryblokToJsonConverter
             var prefix = x.Attributes["data-prefix"]?.Value ?? "";
             var suffix = x.Attributes["data-suffix"]?.Value ?? "";
             var isWhitespaceOnly = x.Attributes["data-whitespace-only"]?.Value == "true";
-            var translatedText = HttpUtility.HtmlDecode(x.InnerHtml);
+            var translatedText = DecodeHtmlEntities(x.InnerHtml);
             translatedText = RestorePrefixSuffix(translatedText, prefix, suffix, isWhitespaceOnly);
 
             ((JValue)token).Value = translatedText;
@@ -156,7 +174,7 @@ public static class StoryblokToJsonConverter
                 var prefix = x.Attributes["data-prefix"]?.Value ?? "";
                 var suffix = x.Attributes["data-suffix"]?.Value ?? "";
                 var isWhitespaceOnly = x.Attributes["data-whitespace-only"]?.Value == "true";
-                var translatedText = HttpUtility.HtmlDecode(x.InnerHtml);
+                var translatedText = DecodeHtmlEntities(x.InnerHtml);
                 translatedText = RestorePrefixSuffix(translatedText, prefix, suffix, isWhitespaceOnly);
                 ((JValue)token).Value = translatedText;
 
