@@ -19,7 +19,8 @@ public static class StoryblokToJsonConverter
         if (string.IsNullOrEmpty(text))
             return text;
         
-        var decoded = HttpUtility.HtmlDecode(text);
+        var decoded = HttpUtility.HtmlDecode(text); 
+        decoded = new string(decoded.Where(c => !char.IsControl(c) || c == '\n' || c == '\r' || c == '\t').ToArray());
         decoded = decoded
             .Replace("&quot;", "\"")
             .Replace("&apos;", "'")
