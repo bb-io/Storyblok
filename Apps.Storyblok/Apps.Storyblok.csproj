@@ -4,7 +4,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Product>Storyblok</Product>
-        <Version>1.3.24</Version>
+        <Version>1.3.23</Version>
         <Description>Headless content management system that empowers developers and content teams to create better content experiences</Description>
         <AssemblyName>Apps.Storyblok</AssemblyName>
     </PropertyGroup>
