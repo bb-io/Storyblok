@@ -18,10 +18,10 @@ public class StoryTests : TestBase
         var client = new StoryActions(InvocationContext, FileManager);
         var input = new ImportStoryRequest
         {
-            SpaceId = "173562",
-            ContentId = "677627238",
-            Content = new FileReference { Name = "677627238.html" },
-            Locale = "I DONT KNOW"
+            //SpaceId = "286695292049554",
+            ContentId = "136024915452056",
+            Content = new FileReference { Name = "test1.xlf" },
+            Locale = "fr"
         };
 
         // Act
