@@ -88,9 +88,12 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
     [Action("Import story content", Description = "Imports a translated story export.")]
     public async Task<StoryEntity> ImportStoryContent([ActionParameter] ImportStoryRequest input) 
     { 
-        if(input.Locale != null && input.FullSlug != null)
+        if (input.Locale != null && input.FullSlug != null)
         {
-            throw new PluginMisconfigurationException("You can only provide either Locale or Full slug, not both. These are different localization approaches.");
+            throw new PluginMisconfigurationException(
+                "You can only provide either Locale or Full slug, not both. " +
+                "These are different localization approaches."
+            );
         }
         
         var fileStream = await fileManagementClient.DownloadAsync(input.Content);
