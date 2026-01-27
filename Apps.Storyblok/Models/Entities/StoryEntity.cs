@@ -92,6 +92,9 @@ public class LocalizedPathEntity
 
 public class TranslatedSlugEntity
 {
+    [JsonProperty("id")]
+    public string? Id { get; set; }
+
     [JsonProperty("lang")]
     [Display("Language")]
     public string Lang { get; set; }

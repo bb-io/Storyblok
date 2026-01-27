@@ -310,21 +310,24 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         var translatedSlug = NormalizePath(input.TranslatedSlug);
 
         var currentStory = await GetStory(story);
-
         if (currentStory.Content == null)
             throw new PluginApplicationException("Story content is missing; cannot update translated slugs.");
+
+        var contentToken = currentStory.Content is JToken jt
+            ? jt
+            : JToken.FromObject(currentStory.Content);
 
         var attributes = new JArray();
 
         foreach (var item in currentStory.TranslatedSlugs ?? new List<TranslatedSlugEntity>())
         {
-            var obj = new JObject
+            attributes.Add(new JObject
             {
+                ["id"] = item.Id,
                 ["lang"] = item.Lang,
                 ["slug"] = item.Slug,
                 ["name"] = item.Name
-            };
-            attributes.Add(obj);
+            });
         }
 
         var attrExisting = attributes
@@ -344,6 +347,13 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         else if (attrExisting["name"] == null && !string.IsNullOrWhiteSpace(currentStory.Name))
             attrExisting["name"] = currentStory.Name;
 
+        if (attrExisting["id"] == null || string.IsNullOrWhiteSpace(attrExisting["id"]?.ToString()))
+        {
+            throw new PluginApplicationException(
+                $"Translated slug id for language '{lang}' is missing. Cannot reliably update existing translated slug. " +
+                $"Ensure Storyblok returns translated_slugs[].id or use a raw JSON GET to include id.");
+        }
+
         var payload = new JObject
         {
             ["story"] = new JObject
@@ -351,7 +361,7 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
                 ["id"] = long.Parse(currentStory.ContentId),
                 ["name"] = currentStory.Name,
                 ["slug"] = currentStory.Slug,
-                ["content"] = currentStory.Content is JToken jt ? jt : JToken.FromObject(currentStory.Content)
+                ["content"] = contentToken,
                 ["translated_slugs_attributes"] = attributes
             }
         };
@@ -375,6 +385,9 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         };
     }
 
+    private static string NormalizePath(string input)
+        => (input ?? string.Empty).Trim().Replace("\\", "/").Trim('/');
+
     private static string? GetFullSlugForLanguage(StoryEntity story, string lang)
     {
         var path = story.LocalizedPaths?
@@ -384,14 +397,8 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         if (!string.IsNullOrWhiteSpace(path))
             return path.Trim('/');
 
-        if (!string.IsNullOrWhiteSpace(story.FullSlug))
-            return story.FullSlug.Trim('/');
-
-        return null;
+        return string.IsNullOrWhiteSpace(story.FullSlug) ? null : story.FullSlug.Trim('/');
     }
-
-    private static string NormalizePath(string input)
-        => (input ?? string.Empty).Trim().Replace("\\", "/").Trim('/');
 
     private async Task<string> GetOrCreateAlternateBySlug(string spaceId, string storyId, string? fullSlug, string json, bool createIfNotExists)
     {
