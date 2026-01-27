@@ -99,8 +99,8 @@ public class StoryTests : TestBase
 
         var input = new StoryRequest
         {
-            SpaceId = "173562",
-            ContentId = "90202101418479"
+            SpaceId = "286695292049554",
+            ContentId = "127280115581092"
         };
 
         var response = await client.GetStory(input);
@@ -141,6 +141,24 @@ public class StoryTests : TestBase
         };
 
         var response = await client.RemoveTagFromStory(input, "Test 4");
+        var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
+        Console.WriteLine(resultJson);
+
+        Assert.IsTrue(true);
+    }
+
+    [TestMethod]
+    public async Task SetStoryLanguageSlug_ReturnsResponse()
+    {
+        var client = new StoryActions(InvocationContext, FileManager);
+
+        var input = new StoryRequest
+        {
+            SpaceId = "286695292049554",
+            ContentId = "127280115581092"
+        };
+
+        var response = await client.SetStoryLanguageSlug(input, new SetStoryLanguageSlugRequest { LanguageCode= "de", TranslatedSlug = "Test270125", BaseSlug = "Test270125" });
         var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
         Console.WriteLine(resultJson);
 

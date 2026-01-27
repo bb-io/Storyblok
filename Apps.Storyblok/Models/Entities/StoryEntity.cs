@@ -39,7 +39,7 @@ public class StoryEntity : IDownloadContentInput, IDownloadContentOutput
 
     [Display("Full slug")] public string FullSlug { get; set; }
 
-    [Display("Root folder")] public string RootFolder => FullSlug.Split("/").First();
+    [Display("Root folder")] public string RootFolder => (FullSlug ?? string.Empty).Split('/').FirstOrDefault() ?? string.Empty;
 
     [Display("Position")] public int Position { get; set; }
 
@@ -69,6 +69,42 @@ public class StoryEntity : IDownloadContentInput, IDownloadContentOutput
 
     [Display("Cannot view")] public bool CannotView { get; set; }
 
+    [JsonProperty("translated_slugs")][Display("Translated slugs")] public List<TranslatedSlugEntity>? TranslatedSlugs { get; set; }
     [DefinitionIgnore] public object Content { get; set; }
     FileReference IDownloadContentOutput.Content { get => throw new NotImplementedException(); set => Content = value; }
+
+    [JsonProperty("localized_paths")]
+    [Display("Localized paths")]
+    public List<LocalizedPathEntity>? LocalizedPaths { get; set; }
+
+}
+
+public class LocalizedPathEntity
+{
+    [JsonProperty("lang")]
+    [Display("Language")]
+    public string Lang { get; set; }
+
+    [JsonProperty("path")]
+    [Display("Path")]
+    public string Path { get; set; }
+}
+
+public class TranslatedSlugEntity
+{
+    [JsonProperty("lang")]
+    [Display("Language")]
+    public string Lang { get; set; }
+
+    [JsonProperty("slug")]
+    [Display("Slug")]
+    public string Slug { get; set; }
+
+    [JsonProperty("name")]
+    [Display("Name")]
+    public string? Name { get; set; }
+
+    [JsonProperty("published")]
+    [Display("Published")]
+    public bool? Published { get; set; }
 }
