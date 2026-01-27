@@ -13,11 +13,5 @@ namespace Apps.Storyblok.Models.Request.Story
 
         [Display("Translated slug")]
         public string TranslatedSlug { get; set; }
-
-        [Display("Translated name")]
-        public string? TranslatedName { get; set; }
-
-        [Display("Base slug")]
-        public string? BaseSlug { get; set; }
     }
 }

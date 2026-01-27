@@ -325,8 +325,7 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
             {
                 ["id"] = item.Id,
                 ["lang"] = item.Lang,
-                ["slug"] = item.Slug,
-                ["name"] = item.Name
+                ["slug"] = item.Slug
             });
         }
 
@@ -341,11 +340,6 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
         }
 
         attrExisting["slug"] = translatedSlug;
-
-        if (!string.IsNullOrWhiteSpace(input.TranslatedName))
-            attrExisting["name"] = input.TranslatedName.Trim();
-        else if (attrExisting["name"] == null && !string.IsNullOrWhiteSpace(currentStory.Name))
-            attrExisting["name"] = currentStory.Name;
 
         if (attrExisting["id"] == null || string.IsNullOrWhiteSpace(attrExisting["id"]?.ToString()))
         {

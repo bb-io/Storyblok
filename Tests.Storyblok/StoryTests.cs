@@ -158,7 +158,7 @@ public class StoryTests : TestBase
             ContentId = "127280115581092"
         };
 
-        var response = await client.SetStoryLanguageSlug(input, new SetStoryLanguageSlugRequest { LanguageCode= "de", TranslatedSlug = "Test270125", BaseSlug = "Test270125" });
+        var response = await client.SetStoryLanguageSlug(input, new SetStoryLanguageSlugRequest { LanguageCode= "de", TranslatedSlug = "Test_new"});
         var resultJson = JsonConvert.SerializeObject(response, Formatting.Indented);
         Console.WriteLine(resultJson);
 
