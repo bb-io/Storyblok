@@ -23,9 +23,12 @@ using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using System.Net.Mime;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Apps.Storyblok.Actions;
 
@@ -291,7 +294,106 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
 
         return await GetStory(story);
     }
-    
+
+    [Action("Set story language slug", Description = "Set translated slug for a story language version (Translatable slugs app).")]
+    public async Task<SetStoryLanguageSlugResponse> SetStoryLanguageSlug(
+    [ActionParameter] StoryRequest story,
+    [ActionParameter] SetStoryLanguageSlugRequest input)
+    {
+        if (string.IsNullOrWhiteSpace(input.LanguageCode))
+            throw new PluginApplicationException("Language code is required.");
+
+        if (string.IsNullOrWhiteSpace(input.TranslatedSlug))
+            throw new PluginApplicationException("Translated slug is required.");
+
+        var lang = input.LanguageCode.Trim();
+        var translatedSlug = NormalizePath(input.TranslatedSlug);
+
+        var currentStory = await GetStory(story);
+        if (currentStory.Content == null)
+            throw new PluginApplicationException("Story content is missing; cannot update translated slugs.");
+
+        var contentToken = currentStory.Content is JToken jt
+            ? jt
+            : JToken.FromObject(currentStory.Content);
+
+        var attributes = new JArray();
+
+        foreach (var item in currentStory.TranslatedSlugs ?? new List<TranslatedSlugEntity>())
+        {
+            attributes.Add(new JObject
+            {
+                ["id"] = item.Id,
+                ["lang"] = item.Lang,
+                ["slug"] = item.Slug
+            });
+        }
+
+        var attrExisting = attributes
+            .OfType<JObject>()
+            .FirstOrDefault(x => string.Equals(x["lang"]?.ToString(), lang, StringComparison.OrdinalIgnoreCase));
+
+        if (attrExisting == null)
+        {
+            attrExisting = new JObject { ["lang"] = lang };
+            attributes.Add(attrExisting);
+        }
+
+        attrExisting["slug"] = translatedSlug;
+
+        if (attrExisting["id"] == null || string.IsNullOrWhiteSpace(attrExisting["id"]?.ToString()))
+        {
+            throw new PluginApplicationException(
+                $"Translated slug id for language '{lang}' is missing. Cannot reliably update existing translated slug. " +
+                $"Ensure Storyblok returns translated_slugs[].id or use a raw JSON GET to include id.");
+        }
+
+        var payload = new JObject
+        {
+            ["story"] = new JObject
+            {
+                ["id"] = long.Parse(currentStory.ContentId),
+                ["name"] = currentStory.Name,
+                ["slug"] = currentStory.Slug,
+                ["content"] = contentToken,
+                ["translated_slugs_attributes"] = attributes
+            }
+        };
+
+        var endpoint = $"/v1/spaces/{story.SpaceId}/stories/{story.ContentId}";
+        var putRequest = new StoryblokRequest(endpoint, Method.Put, Creds)
+            .AddStringBody(payload.ToString(Newtonsoft.Json.Formatting.None), DataFormat.Json);
+
+        await Client.ExecuteWithErrorHandling(putRequest);
+
+        var updatedStory = await GetStory(story);
+
+        var fullSlug = GetFullSlugForLanguage(updatedStory, lang);
+        if (string.IsNullOrWhiteSpace(fullSlug))
+            throw new PluginApplicationException($"Full slug for language '{lang}' was not found in story response.");
+
+        return new SetStoryLanguageSlugResponse
+        {
+            Story = updatedStory,
+            FullSlug = fullSlug
+        };
+    }
+
+    private static string NormalizePath(string input)
+        => (input ?? string.Empty).Trim().Replace("\\", "/").Trim('/');
+
+    private static string? GetFullSlugForLanguage(StoryEntity story, string lang)
+    {
+        var path = story.LocalizedPaths?
+            .FirstOrDefault(x => string.Equals(x.Lang, lang, StringComparison.OrdinalIgnoreCase))
+            ?.Path;
+
+        if (!string.IsNullOrWhiteSpace(path))
+            return path.Trim('/');
+
+        return string.IsNullOrWhiteSpace(story.FullSlug) ? null : story.FullSlug.Trim('/');
+    }
+
     private async Task<string> GetOrCreateAlternateBySlug(string spaceId, string storyId, string? fullSlug, string json, bool createIfNotExists)
     {
         var endpoint = $"/v1/spaces/{spaceId}/stories/{storyId}";
