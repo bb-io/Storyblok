@@ -9,7 +9,7 @@ namespace Apps.Storyblok.Models.Request.Story
     {
         [Display("Language code")]
         [StaticDataSource(typeof(LanguageDataHandler))]
-        public string? LanguageCode { get; set; }
+        public string LanguageCode { get; set; }
 
         [Display("Translated slug")]
         public string TranslatedSlug { get; set; }
