@@ -317,36 +317,17 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
             ? jt
             : JToken.FromObject(currentStory.Content);
 
-        var attributes = new JArray();
+        var existing = (currentStory.TranslatedSlugs ?? new List<TranslatedSlugEntity>())
+            .FirstOrDefault(x => string.Equals(x.Lang, lang, StringComparison.OrdinalIgnoreCase));
 
-        foreach (var item in currentStory.TranslatedSlugs ?? new List<TranslatedSlugEntity>())
+        var attr = new JObject
         {
-            attributes.Add(new JObject
-            {
-                ["id"] = item.Id,
-                ["lang"] = item.Lang,
-                ["slug"] = item.Slug
-            });
-        }
+            ["lang"] = lang,
+            ["slug"] = translatedSlug
+        };
 
-        var attrExisting = attributes
-            .OfType<JObject>()
-            .FirstOrDefault(x => string.Equals(x["lang"]?.ToString(), lang, StringComparison.OrdinalIgnoreCase));
-
-        if (attrExisting == null)
-        {
-            attrExisting = new JObject { ["lang"] = lang };
-            attributes.Add(attrExisting);
-        }
-
-        attrExisting["slug"] = translatedSlug;
-
-        if (attrExisting["id"] == null || string.IsNullOrWhiteSpace(attrExisting["id"]?.ToString()))
-        {
-            throw new PluginApplicationException(
-                $"Translated slug id for language '{lang}' is missing. Cannot reliably update existing translated slug. " +
-                $"Ensure Storyblok returns translated_slugs[].id or use a raw JSON GET to include id.");
-        }
+        if (!string.IsNullOrWhiteSpace(existing?.Id))
+            attr["id"] = existing.Id;
 
         var payload = new JObject
         {
@@ -356,7 +337,7 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
                 ["name"] = currentStory.Name,
                 ["slug"] = currentStory.Slug,
                 ["content"] = contentToken,
-                ["translated_slugs_attributes"] = attributes
+                ["translated_slugs_attributes"] = new JArray(attr)
             }
         };
 
