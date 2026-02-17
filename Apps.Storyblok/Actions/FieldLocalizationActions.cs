@@ -187,7 +187,8 @@ public class FieldLocalizationActions(InvocationContext invocationContext, IFile
 
     private async Task TranslateStory(StoryEntity storyEntity, string spaceId, string targetLanguage, string translatedHtml, bool publishImmediately)
     {
-        var htmlBody = translatedHtml.AsHtmlDocument().DocumentNode.SelectSingleNode("/html/body");
+        var htmlBody = translatedHtml.AsHtmlDocument().DocumentNode.SelectSingleNode("/html/body") 
+            ?? throw new PluginMisconfigurationException("HTML file does not contain body");
         var content = JObject.Parse(storyEntity.Content.ToString());
         await TranslateStoryContentRecursively(content, htmlBody.ChildNodes.Where(x => x.Name == "div").First(), spaceId, targetLanguage);
 
