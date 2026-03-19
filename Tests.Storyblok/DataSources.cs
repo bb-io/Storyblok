@@ -11,17 +11,19 @@ public class DataSources : TestBase
     [TestMethod]
     public async Task StoryDataHandler_ReturnsValues()
     {
-       var handler = new StoryDataHandler(InvocationContext, new StoryRequest
-       {
-           SpaceId = "286695292049554"
-       });
+        var handler = new StoryDataHandler(InvocationContext, new StoryRequest
+        {
+            SpaceId = "342966"
+        });
         var context = new DataSourceContext
         {
         };
         var result = await handler.GetDataAsync(context, CancellationToken.None);
+
+        Console.WriteLine($"Count: {result.Count()}");
         foreach (var item in result)
         {
-            Console.WriteLine($"Key: {item.Key}, Value: {item.Value}");
+            Console.WriteLine($"Key: {item.Value}, Value: {item.DisplayName}");
         }
         Assert.IsNotNull(result);   
     }
