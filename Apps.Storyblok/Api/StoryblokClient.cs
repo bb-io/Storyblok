@@ -43,36 +43,6 @@ public class StoryblokClient : BlackBirdRestClient
         return restResponse;
     }
 
-    protected override Exception ConfigureErrorException(RestResponse response)
-    {
-       
-        if (response == null)
-        {
-            return new PluginApplicationException($"Error: {response.ErrorMessage}");
-        }
-
-        if (string.IsNullOrEmpty(response.Content))
-        {
-            return new PluginApplicationException($"Error: {response.ErrorMessage}");
-        }
-
-        var responseContent = response.Content!;
-        try
-        {
-            var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(responseContent, JsonSettings);
-            if (errorResponse?.Error != null)
-            {
-                return new PluginApplicationException(errorResponse.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            return new PluginApplicationException($"Error: {ex.Message}. Raw content: {responseContent}", ex);
-        }
-
-        return new PluginApplicationException($"Error: {responseContent}");
-    }
-
     public async Task<List<TV>> Paginate<T, TV>(RestRequest request) where T : PaginationResponse<TV>
     {
         var baseUrl = request.Resource;
@@ -90,5 +60,55 @@ public class StoryblokClient : BlackBirdRestClient
         } while (response.Items.Any());
 
         return result;
+    }
+    
+    protected override Exception ConfigureErrorException(RestResponse response)
+    {
+        if (string.IsNullOrEmpty(response.Content))
+        {
+            if (string.IsNullOrEmpty(response.ErrorMessage))
+            {
+                return new PluginApplicationException($"Request failed with status code {response.StatusCode} and no content or error message.");
+            }
+            
+            return new PluginApplicationException($"Request failed with status code {response.StatusCode} and error message: {response.ErrorMessage}");
+        }
+        
+        if(response.ContentType == "text/html")
+        {
+            return new PluginApplicationException($"Request failed with status code {response.StatusCode} and HTML content: {response.Content}");
+        }
+        
+        var errorMessage = GetErrorMessage(response.Content!);
+        return new PluginApplicationException(errorMessage);
+    }
+    
+    private static string GetErrorMessage(string content)
+    {
+        try
+        {
+            if (content.StartsWith("["))
+            {
+                var errorResponses = JsonConvert.DeserializeObject<List<string>>(content, JsonConfig.Settings);
+                if (errorResponses != null && errorResponses.Any())
+                {
+                    return string.Join(", ", errorResponses);
+                }
+            }
+            else
+            {
+                var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content, JsonConfig.Settings);
+                if (errorResponse?.Error != null)
+                {
+                    return errorResponse.Error;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return $"Error parsing content: {ex.Message}. Raw content: {content}";
+        }
+
+        return $"Unknown error: {content}";
     }
 }
