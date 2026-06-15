@@ -355,7 +355,7 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
 
         return new SetStoryLanguageSlugResponse
         {
-            Story = updatedStory,
+            Story = MapSetStoryLanguageSlugStory(updatedStory),
             FullSlug = fullSlug
         };
     }
@@ -374,6 +374,44 @@ public class StoryActions(InvocationContext invocationContext, IFileManagementCl
 
         return string.IsNullOrWhiteSpace(story.FullSlug) ? null : story.FullSlug.Trim('/');
     }
+
+    private static SetStoryLanguageSlugStoryResponse MapSetStoryLanguageSlugStory(StoryEntity story)
+        => new()
+        {
+            Name = story.Name,
+            Alternates = story.Alternates,
+            ParentId = story.ParentId,
+            CreatedAt = story.CreatedAt,
+            DeletedAt = story.DeletedAt,
+            GroupId = story.GroupId,
+            SortByDate = story.SortByDate,
+            UpdatedAt = story.UpdatedAt,
+            PublishedAt = story.PublishedAt,
+            ContentId = story.ContentId,
+            Uuid = story.Uuid,
+            IsFolder = story.IsFolder,
+            Published = story.Published,
+            Slug = story.Slug,
+            Path = story.Path,
+            FullSlug = story.FullSlug,
+            RootFolder = story.RootFolder,
+            Position = story.Position,
+            UnpublishedChanges = story.UnpublishedChanges,
+            IsStartpage = story.IsStartpage,
+            Pinned = story.Pinned,
+            PublishAt = story.PublishAt,
+            ExpireAt = story.ExpireAt,
+            FirstPublishedAt = story.FirstPublishedAt,
+            ReleaseIds = story.ReleaseIds,
+            DefaultRoot = story.DefaultRoot,
+            DisableFeEditor = story.DisableFeEditor,
+            LastAuthor = story.LastAuthor,
+            ContentType = story.ContentType,
+            TagList = story.TagList,
+            CannotView = story.CannotView,
+            TranslatedSlugs = story.TranslatedSlugs,
+            LocalizedPaths = story.LocalizedPaths
+        };
 
     private async Task<string> GetOrCreateAlternateBySlug(string spaceId, string storyId, string? fullSlug, string json, bool createIfNotExists)
     {
