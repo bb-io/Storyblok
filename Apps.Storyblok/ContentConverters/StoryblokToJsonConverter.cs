@@ -14,6 +14,14 @@ namespace Apps.Storyblok.ContentConverters;
 
 public static class StoryblokToJsonConverter
 {
+    private static string ConvertBrTagsToNewlines(string html)
+    {
+        if (string.IsNullOrEmpty(html) || !html.Contains("<br", StringComparison.OrdinalIgnoreCase))
+            return html;
+
+        return Regex.Replace(html, @"<br\s*/?>", "\n", RegexOptions.IgnoreCase);
+    }
+
     private static string DecodeHtmlEntities(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -104,11 +112,11 @@ public static class StoryblokToJsonConverter
         var translatableFields = new[] { "keywords", "leadText", "metaTitle", "pageTitle", "metaDescription", "title", "articleTitle", "articleDescription", "imageAltTag", "text" };
         if (translatableFields.Any(field => componentId.EndsWith($":{field}")))
         {
-            var htmlContent = DecodeHtmlEntities(node.InnerHtml);
+            var htmlContent = DecodeHtmlEntities(ConvertBrTagsToNewlines(node.InnerHtml));
             return new(componentId, RestorePrefixSuffix(htmlContent, prefix, suffix, isWhitespaceOnly));
         }
 
-        var htmlContentDefault = DecodeHtmlEntities(node.InnerHtml);
+        var htmlContentDefault = DecodeHtmlEntities(ConvertBrTagsToNewlines(node.InnerHtml));
         return new(componentId, RestorePrefixSuffix(htmlContentDefault, prefix, suffix, isWhitespaceOnly));
     }
 

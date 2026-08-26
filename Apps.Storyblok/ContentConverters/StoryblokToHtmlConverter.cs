@@ -58,7 +58,7 @@ public static class StoryblokToHtmlConverter
                     else
                     {
                         AddPrefixSuffixAttributes(node, x.Value);
-                        node.InnerHtml = HtmlDocument.HtmlEncode(x.Value);
+                        node.InnerHtml = EncodeTextWithNewlines(x.Value);
                     }
                 }
                 else if (x.Key.EndsWith(ConverterConstants.TableId))
@@ -76,7 +76,7 @@ public static class StoryblokToHtmlConverter
                 else
                 {
                     AddPrefixSuffixAttributes(node, x.Value);
-                    node.InnerHtml = HtmlDocument.HtmlEncode(x.Value);
+                    node.InnerHtml = EncodeTextWithNewlines(x.Value);
                 }
             }
         }
@@ -336,6 +336,14 @@ public static class StoryblokToHtmlConverter
         "paragraph" => HtmlConstants.Paragraph,
         _ => HtmlConstants.Div
     };
+
+    private static string EncodeTextWithNewlines(string text)
+    {
+        if (!text.Contains('\n'))
+            return HtmlDocument.HtmlEncode(text);
+
+        return string.Join("<br>", text.Split('\n').Select(HtmlDocument.HtmlEncode));
+    }
 
     private static bool IsValidJson(string text)
     {
