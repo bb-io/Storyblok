@@ -5,12 +5,16 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
+using Polly;
 using RestSharp;
 
 namespace Apps.Storyblok.Api;
 
 public class StoryblokClient : BlackBirdRestClient
 {
+    private static readonly ResiliencePipeline<RestResponse> RateLimitPipeline =
+        StoryblokPollyPolicies.CreateRateLimitPipeline();
+
     protected override JsonSerializerSettings? JsonSettings => JsonConfig.Settings;
 
     public StoryblokClient() : base(new()
@@ -34,7 +38,10 @@ public class StoryblokClient : BlackBirdRestClient
 
     public override async Task<RestResponse> ExecuteWithErrorHandling(RestRequest request)
     {
-        RestResponse restResponse = await ExecuteAsync(request);
+        RestResponse restResponse = await RateLimitPipeline.ExecuteAsync(
+            cancellationToken => new ValueTask<RestResponse>(ExecuteAsync(request, cancellationToken)),
+            CancellationToken.None);
+
         if (!restResponse.IsSuccessStatusCode)
         {
             throw ConfigureErrorException(restResponse);
